@@ -1,0 +1,7 @@
+.header {
+    position: absolute;
+    z-index: 1;
+    background: hsla(78%, 75%, 025%, 0.8);
+    color: white;
+    margin-inline-start: 10px;
+}

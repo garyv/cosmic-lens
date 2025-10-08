@@ -1,0 +1,6 @@
+[build]
+  command = "npm run build"
+  dir = "dist/client"
+[dev]
+  command = "npm run dev"
+  port = 3000
