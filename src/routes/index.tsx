@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -9,6 +10,10 @@ const photoData = normalizePhotoData(
 )
 
 function App() {
+  useEffect(() => {
+     document.title = 'Cosmic Lens - Space Telescope Photography';
+   }, []);
+
   return (
     <main>
       <header>

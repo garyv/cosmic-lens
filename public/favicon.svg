@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" aria-hidden="true" viewBox="0 0 64 64">
+  <defs>
+    <filter id="e" width="1.2" height="1.2" x="-.1" y="-.1">
+      <feGaussianBlur in="SourceGraphic" result="blur1" stdDeviation="2"/>
+      <feMerge>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="a" width="1.3" height="1.3" x="-.1" y="-.1">
+      <feMorphology in="SourceAlpha" operator="dilate" radius=".4" result="dil"/>
+      <feGaussianBlur in="dil" result="dilb" stdDeviation=".4"/>
+      <feComposite in="dilb" in2="SourceAlpha" operator="out" result="outline"/>
+      <feColorMatrix in="outline" result="outlineA" values="0 0 0 0 0.0 0 0 0 0 0.0 0 0 0 0 0.0 0 0 0 0.45"/>
+      <feMerge>
+        <feMergeNode in="outlineA"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="b" cx="35%" cy="28%" r="75%">
+      <stop offset="0%" stop-color="#fff9d6"/>
+      <stop offset="38%" stop-color="#fff2a8"/>
+      <stop offset="100%" stop-color="#ffe97b"/>
+    </radialGradient>
+  </defs>
+  <path fill="none" d="M0 0h64v64H0z"/>
+  <g filter="url(#a)">
+    <path fill="url(#b)" stroke="#f7d85a" stroke-linejoin="round" stroke-width=".9" d="m32 6 6 17 19 1-15 11 5 18-15-10-15 10 5-18L7 24l19-1z" filter="url(#e)"/>
+  </g>
+</svg>

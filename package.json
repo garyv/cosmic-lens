@@ -8,7 +8,9 @@
     "build": "NODE_ENV=production npm run gen && vite build && tsc",
     "preview": "NODE_ENV=production npm run gen && vite preview",
     "test": "vitest run",
-    "gen": "tsx src/scripts/generate-images.ts"
+    "gen": "tsx src/scripts/generate-images.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
     "@netlify/vite-plugin-tanstack-start": "^1.0.2",
@@ -17,7 +19,8 @@
     "@tanstack/react-router-devtools": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-zoom-pan-pinch": "^3.7.0"
   },
   "devDependencies": {
     "@rollup/plugin-yaml": "^4.1.2",
@@ -27,11 +30,19 @@
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^5.0.4",
+    "husky": "^9.1.7",
     "jsdom": "^27.0.0",
+    "lint-staged": "^16.2.3",
+    "prettier": "^3.6.2",
     "sharp": "^0.34.4",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
     "vitest": "^3.0.5",
     "web-vitals": "^5.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,css,json,md}": [
+      "prettier --write"
+    ]
   }
 }

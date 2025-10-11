@@ -1,13 +1,17 @@
 :root {
   --background-color: hsl(220, 13%, 18%);
-  --text-color: hsl(220, 13%, 85%);
+  --text-color: hsl(36, 45%, 96%);
+  --white-cool: hsl(214, 4%, 99%);
+  --white-warm: hsl(38, 8%, 94%);
+  --text-color: var(--white-warm);
+  --panel-background: hsla(240, 30%, 8%, 0.405);
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background-color);

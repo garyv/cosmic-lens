@@ -1,44 +1,360 @@
-
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { getConfig } from "../config.ts";
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Link } from '@tanstack/react-router';
+import {
+  TransformWrapper,
+  TransformComponent,
+  type ReactZoomPanPinchContentRef,
+} from 'react-zoom-pan-pinch';
+import { Description } from './description.tsx';
+import { useDebounce } from '../hooks/use-debounce.ts';
 import classNames from './photo.module.css';
+import { getConfig } from '../config.ts';
 
-const { sizes } = getConfig();
+const { sizes } = getConfig('production') as { sizes: number[] };
 
 export type PhotoProps = {
-    photoId: string;
-}
+  photoId: string;
+  scale?: number;
+  coverScale?: number;
+};
+
+const maxZoom = 10;
+const gazeModeDelay = 3000;
+const zoomStep = 0.2;
+
+const Controls = ({ zoomIn, zoomOut }: ReactZoomPanPinchContentRef) => {
+  return (
+    <div
+      className={classNames.toolbar}
+      role="toolbar"
+      aria-label="Image controls"
+    >
+      <button
+        className={classNames.button}
+        onClick={() => zoomIn()}
+        title="Zoom in"
+        type="button"
+      >
+        ＋
+      </button>
+      <button
+        className={classNames.button}
+        onClick={() => zoomOut()}
+        title="Zoom out"
+        type="button"
+      >
+        −
+      </button>
+    </div>
+  );
+};
+
+const Header = ({ title }: { title: string }) => (
+  <header className={classNames.header}>
+    <h1>
+      <Link to="/" title="Back to home">
+        ←{' '}
+      </Link>
+      <span title={title}>{title}</span>
+    </h1>
+  </header>
+);
+
+const Info = ({ onClick }: { onClick: () => void }) => (
+  <div
+    className={`${classNames.toolbar} ${classNames.right} ${classNames.bottom}`}
+    role="toolbar"
+  >
+    <button
+      className={classNames.button}
+      title="More Info"
+      type="button"
+      onClick={onClick}
+    >
+      <i className={classNames.info}>i</i>
+    </button>
+  </div>
+);
+
+const getSourceSet = (
+  photoId: string,
+  { scale = 1, baseSizes = sizes, format = 'avif', coverScale = 1 } = {}
+) => {
+  // filter out sizes that are too small for the current scale
+  const effectiveSizes = baseSizes.filter(
+    (size) => size >= 320 * scale * coverScale
+  );
+
+  // if all sizes filtered out return just the largest size
+  if (effectiveSizes.length === 0) {
+    const largestSize = baseSizes[baseSizes.length - 1];
+    return `/images/${largestSize}/${photoId}.${format}`;
+  }
+
+  return effectiveSizes
+    .map((size) => `/images/${size}/${photoId}.${format} ${size}w`)
+    .join(', ');
+};
+
+const Picture = React.forwardRef<HTMLImageElement, PhotoProps>(
+  ({ photoId, scale = 1, coverScale = 1 }, ref) => (
+    <div className={classNames.picture}>
+      <picture>
+        <source
+          srcSet={getSourceSet(photoId, { scale, coverScale })}
+          type="image/avif"
+        />
+        <source
+          srcSet={getSourceSet(photoId, {
+            scale,
+            coverScale,
+            baseSizes: [1024, 768, 320],
+            format: 'jpeg',
+          })}
+          type="image/jpeg"
+        />
+        <img
+          ref={ref}
+          className={classNames.img}
+          src={`/images/320/${photoId}.jpeg`}
+        />
+      </picture>
+    </div>
+  )
+);
+
+const interactionEvents = [
+  'mousemove',
+  'mousedown',
+  'keydown',
+  'touchstart',
+  'touchmove',
+  'wheel',
+];
 
 export const Photo = ({ photoId }: PhotoProps) => {
-    const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<any>(null);
+  const [description, setDescription] = useState<string | null>(null);
+  const [isGazeMode, setIsGazeMode] = useState(false);
+  const [isDescriptionVisible, setIsDescriptionVisible] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [isZoomInitialized, setIsZoomInitialized] = useState(false);
+  const [minZoom, setMinZoom] = useState(1);
+  const [coverScale, setCoverScale] = useState(1);
+  const imageRef = useRef<HTMLImageElement>(null);
 
-    useEffect(() => {
-        let isMounted = true;
-        import(`../photos/${photoId}/meta.yaml`)
-            .then((mod) => { if (isMounted) setMeta(mod.default || mod); })
-            .catch(() => { if (isMounted) setMeta(null); });
-        return () => { isMounted = false; };
-    }, [photoId]);
+  useEffect(() => {
+    document.title = meta?.title
+      ? `${meta.title} - Cosmic Lens`
+      : 'Cosmic Lens';
+  }, [meta]);
 
+  useEffect(() => {
+    if (isDescriptionVisible) {
+      setIsGazeMode(false);
+      return;
+    }
+
+    let timeoutId: number;
+
+    const resetTimer = () => {
+      setIsGazeMode(false);
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        setIsGazeMode(true);
+      }, gazeModeDelay);
+    };
+
+    interactionEvents.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      interactionEvents.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [isDescriptionVisible]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      import(`../photos/${photoId}/meta.yaml`),
+      import(`../photos/${photoId}/description.html?raw`),
+    ])
+      .then(([metaMod, descMod]) => {
+        if (!cancelled) {
+          setMeta(metaMod.default || metaMod);
+          setDescription(descMod.default || descMod);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMeta(null);
+          setDescription(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [photoId]);
+
+  const transformComponentRef = useRef<ReactZoomPanPinchContentRef>(null);
+
+  const handleZoomUpdate = useDebounce((newZoom: number) => {
+    setZoom(newZoom);
+  }, 150);
+
+  const handleResize = useCallback(() => {
+    const img = imageRef.current;
+    const instance = transformComponentRef?.current?.instance;
+    const setTransform = transformComponentRef?.current?.setTransform;
+
+    if (img && instance && setTransform) {
+      const newMinScale = calculateCoverZoom(img);
+      instance.setup.minScale = newMinScale;
+      setCoverScale(newMinScale);
+
+      // reset zoom if current zoom is below new minimum
+      if (zoom < newMinScale) {
+        setTransform(0, 0, newMinScale, 0);
+      }
+    }
+  }, [zoom]);
+
+  const debouncedHandleResize = useDebounce(handleResize, 150);
+
+  const handleTransform = useCallback(
+    ({ state }: { state: any }) => {
+      const img = imageRef.current;
+      const setTransform = transformComponentRef.current?.setTransform;
+      const instance = transformComponentRef.current?.instance;
+      if (!img || !setTransform || !instance) return;
+
+      const currentZoom = Math.round(state.scale * 100) / 100;
+      const currentX = state.positionX;
+      const currentY = state.positionY;
+
+      // library scale is already relative to the fitted image so we just need fitted dimensions
+      const fitScale = Math.min(
+        window.innerWidth / img.naturalWidth,
+        window.innerHeight / img.naturalHeight
+      );
+
+      // current display size with library scale applied to fitted size
+      const displayWidth = img.naturalWidth * fitScale * currentZoom;
+      const displayHeight = img.naturalHeight * fitScale * currentZoom;
+
+      const maxX = Math.max(0, displayWidth - window.innerWidth);
+      const maxY = Math.max(0, displayHeight - window.innerHeight);
+
+      const boundedX = Math.min(0, Math.max(-maxX, currentX));
+      const boundedY = Math.min(0, Math.max(-maxY, currentY));
+
+      if (boundedX !== currentX || boundedY !== currentY) {
+        setTransform(boundedX, boundedY, currentZoom, 0);
+      }
+
+      if (Math.abs(currentZoom - zoom) >= zoomStep) {
+        handleZoomUpdate(currentZoom);
+      }
+    },
+    [zoom, handleZoomUpdate]
+  );
+
+  const calculateCoverZoom = (img: HTMLImageElement) => {
+    // aspect ratios
+    const windowRatio = window.innerWidth / window.innerHeight;
+    const imageRatio = img.naturalWidth / img.naturalHeight;
+
+    // ratio of larger aspect to smaller aspect
     return (
-        <>
-            {meta && <h3 className={classNames.header}>
-                <Link to="/">← </Link>
-                {meta.title}
-            </h3>}
-
-            <picture>
-                <source srcSet={source(photoId)} type='image/avif' />
-                <source srcSet={legacy(photoId)} type='image/jpeg' />
-                <img src={`/images/320/${photoId}.jpeg`} />
-            </picture>
-        </>
+      Math.max(windowRatio, imageRatio) / Math.min(windowRatio, imageRatio)
     );
-}
+  };
 
-const source = (photoId: string) => 
-    sizes.map(size => `/images/${size}/${photoId}.avif ${size}w`).join(', ');
+  useEffect(() => {
+    const img = imageRef.current;
+    const instance = transformComponentRef?.current?.instance;
+    const setTransform = transformComponentRef?.current?.setTransform;
 
-const legacy = (photoId: string) => 
-    `/images/320/${photoId}.jpeg 320w, /images/1024/${photoId}.jpeg 1024w`;
+    const applyZoomAndRecalculateBounds = (newZoom: number) => {
+      if (instance && setTransform) {
+        instance.setup.minScale = newZoom;
+        setTransform(0, 0, newZoom, 0);
+        setIsZoomInitialized(true);
+        setMinZoom(newZoom);
+        setCoverScale(newZoom);
+      }
+    };
+
+    if (img?.complete && !isZoomInitialized) {
+      const newZoom = calculateCoverZoom(img);
+      applyZoomAndRecalculateBounds(newZoom);
+    } else if (img && !isZoomInitialized) {
+      const handleLoad = () => {
+        const newZoom = calculateCoverZoom(img);
+        applyZoomAndRecalculateBounds(newZoom);
+      };
+      img.addEventListener('load', handleLoad);
+      return () => img.removeEventListener('load', handleLoad);
+    }
+  }, [photoId, isZoomInitialized]);
+
+  useEffect(() => {
+    if (!isZoomInitialized) return;
+
+    window.addEventListener('resize', debouncedHandleResize);
+    return () => window.removeEventListener('resize', debouncedHandleResize);
+  }, [isZoomInitialized, debouncedHandleResize]);
+
+  return (
+    <main
+      className={`${classNames.main} ${isGazeMode ? classNames.gazeMode : ''}`}
+    >
+      <div className={classNames.wrapper}>
+        <TransformWrapper
+          initialScale={zoom}
+          minScale={minZoom}
+          maxScale={maxZoom}
+          ref={transformComponentRef}
+          centerOnInit={true}
+          centerZoomedOut={false}
+          limitToBounds={true}
+          onTransformed={handleTransform}
+          disablePadding={true}
+          wheel={{ disabled: false }}
+          alignmentAnimation={{ disabled: true }}
+        >
+          {(utils) => (
+            <>
+              <TransformComponent>
+                <Picture
+                  ref={imageRef}
+                  photoId={photoId}
+                  scale={zoom}
+                  coverScale={coverScale}
+                />
+              </TransformComponent>
+              <Controls {...utils} />
+            </>
+          )}
+        </TransformWrapper>
+      </div>
+      {meta?.title && <Header title={meta.title} />}
+      {description && (
+        <>
+          <Description text={description} visible={isDescriptionVisible} />
+          <Info
+            onClick={() => setIsDescriptionVisible((previous) => !previous)}
+          />
+        </>
+      )}
+    </main>
+  );
+};

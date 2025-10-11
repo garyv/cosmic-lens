@@ -1,7 +1,122 @@
+.main {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wrapper {
+  flex-shrink: 0;
+  height: 100vh;
+  margin-bottom: -100vh;
+
+  .toolbar {
+    top: -60px;
+    left: 10px;
+  }
+}
+
+.picture {
+  height: 100vh;
+  width: 100vw;
+}
+
+.img {
+  display: block;
+  flex: 1 0 100vmin;
+  height: 100vmin;
+  min-width: 100vmin;
+  object-fit: cover;
+}
+
+.header,
+.description,
+.toolbar {
+  position: relative;
+  transition:
+    opacity 0.3s ease-out,
+    visibility 0.15s ease-out 0.3s;
+}
+
 .header {
-    position: absolute;
-    z-index: 1;
-    background: hsla(78%, 75%, 025%, 0.8);
-    color: white;
-    margin-inline-start: 10px;
+  background: var(--panel-background);
+  margin-inline-start: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  width: fit-content;
+  max-width: calc(100vw - 40px);
+
+  h1 {
+    margin: 0;
+    font-size: 1.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
+
+.info {
+  font-family:
+    'Georgia', 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif;
+  font-style: italic;
+  margin: 1px;
+}
+
+.toolbar {
+  background: var(--panel-background);
+  color: var(--text-color);
+  border-radius: 8px;
+  display: flex;
+  padding: 10px;
+  width: fit-content;
+  gap: 10px;
+
+  &.right {
+    margin-left: auto;
+    left: -10px;
+  }
+
+  &.bottom {
+    margin-top: auto;
+    top: -10px;
+  }
+}
+
+.button {
+  all: unset;
+  background: transparent;
+  border-radius: 5px;
+  border: 1px solid var(--text-color);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 6px;
+  transition:
+    color 0.1s,
+    border-color 0.1s,
+    box-shadow 0.1s;
+  font-size: 20px;
+  line-height: 1;
+  font-family: ui-monospace, monospace;
+  user-select: none;
+}
+
+.button:hover {
+  color: var(--white-cool);
+  border-color: var(--white-cool);
+  box-shadow: 0 0 2px var(--white-cool);
+}
+
+.button:focus-visible {
+  outline: 2px solid #3af;
+  outline-offset: 2px;
+}
+
+.gazeMode .header,
+.gazeMode .toolbar {
+  opacity: 0;
+  visibility: hidden;
 }
