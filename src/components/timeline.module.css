@@ -1,0 +1,16 @@
+.timeline {
+  display: block;
+  color: var(--text-color);
+  background-color: var(--panel-background);
+  border: 1px solid var(--white-warm);
+  border-radius: 8px;
+  padding: 10px;
+  max-width: 60vw;
+  width: max(12em, 30vw);
+  height: 100vh;
+  flex-shrink: 0;
+
+  summary {
+    list-style: none;
+  }
+}

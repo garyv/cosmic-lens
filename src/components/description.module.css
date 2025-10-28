@@ -1,0 +1,33 @@
+.description {
+  margin: 10px;
+  text-align: left;
+  background: var(--panel-background);
+  color: var(--text-color);
+  padding: 10px;
+  border-radius: 8px;
+  max-width: 20rem;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    color: var(--text-color);
+    &:hover {
+      color: var(--white-cool);
+    }
+  }
+}

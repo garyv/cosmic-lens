@@ -1,0 +1,19 @@
+@keyframes panToRight {
+  0% {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  98% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(25%);
+    opacity: 0;
+  }
+}

@@ -1,6 +1,4 @@
 :root {
-  --background-color: hsl(220, 13%, 18%);
-  --text-color: hsl(36, 45%, 96%);
   --white-cool: hsl(214, 4%, 99%);
   --white-warm: hsl(38, 8%, 94%);
   --text-color: var(--white-warm);
@@ -14,7 +12,6 @@ body {
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--background-color);
   color: var(--text-color);
 }
 
