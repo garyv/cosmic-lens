@@ -21,7 +21,7 @@ export const SpriteMatrix = ({
         <div
           key={`${row}-${col}`}
           style={{
-            backgroundImage: `url(${backgroundImage})`,
+            backgroundImage,
             backgroundSize: `${columns * 100}% ${rows * 100}%`,
             backgroundPosition: `${getBackgroundPosition(col, columns)}% ${getBackgroundPosition(row, rows)}%`,
             backgroundRepeat: 'no-repeat',

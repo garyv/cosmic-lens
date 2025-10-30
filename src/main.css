@@ -1,8 +1,11 @@
 :root {
-  --white-cool: hsl(214, 4%, 99%);
-  --white-warm: hsl(38, 8%, 94%);
-  --text-color: var(--white-warm);
-  --panel-background: hsla(240, 30%, 8%, 0.405);
+  --white-cool: hsl(214, 32%, 99%);
+  --white-warm: hsl(38, 16%, 95%);
+  --fill: var(--white-warm);
+  --panel-background: hsla(240, 30%, 8%, 0.412);
+  --background: hsl(240, 30%, 8%);
+  --active-color: hsl(51, 91%, 77%);
+  --active-border: 2px;
 }
 
 body {
@@ -12,11 +15,8 @@ body {
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: var(--text-color);
-}
-
-main {
-  text-align: center;
+  color: var(--fill);
+  background-color: var(--background);
 }
 
 a {
@@ -24,15 +24,47 @@ a {
   text-decoration: none;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin: 0;
-}
-
 li {
   list-style: none;
 }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.62s;
+  animation-timing-function: ease-in-out;
+}
+
+/* TODO - complete warp transition */
+/* ::view-transition-old(root) {
+  animation-name: warp-out;
+}
+
+::view-transition-new(root) {
+  animation-name: warp-in;
+}
+
+@keyframes warp-out {
+  from {
+    filter: blur(0) brightness(1);
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    filter: blur(15px) brightness(1.8);
+    opacity: 0;
+    transform: scale(1.62) rotate(0);
+  }
+}
+
+@keyframes warp-in {
+  from {
+    opacity: 0;
+    filter: blur(15px) brightness(1.8);
+    transform: scale(0.62) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) brightness(1);
+    transform: scale(1) rotate(0deg);
+  }
+} */

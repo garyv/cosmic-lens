@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import earthImage from '../images/earth_no_clouds.png';
+import earthImage from '../images/earth_clouds.jpg';
 import * as THREE from 'three';
 
 export const Earth = ({
@@ -55,7 +55,7 @@ export const Earth = ({
     scene.add(earth);
 
     // lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 3.2);
     scene.add(ambientLight);
 
     // const directionalLight = new THREE.DirectionalLight(0xffffff, 1);

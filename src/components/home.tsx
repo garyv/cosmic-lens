@@ -1,27 +1,28 @@
 import { SpriteMatrix } from '../components/spriteMatrix.tsx';
-import nightSkyImage from '../images/stars_north.webp';
 import { Earth } from './earth.tsx';
 import { Description } from './description.tsx';
 import { Timeline } from './timeline.tsx';
 import descriptionHTML from '../places/home.html?raw';
 import headerStyles from '../components/header.module.css';
 import styles from './home.module.css';
-import '../components/animation.css';
+import '../components/stars.css';
 
-const starRows = 8;
-const duration = 60;
+const starRows = 6; // how many parallex rows of stars
+const duration = 90; // how long to pan stars
+const delta = 1.5; // different speeds in each row of parallex stars
+const steps = 2_000; // total animation frames - reduce for perforance, increase for smoothness
 
 export const Home = ({ children }: { children?: React.ReactNode }) => {
   return (
     <main className={styles.home}>
       <SpriteMatrix
         className={styles.stars}
-        backgroundImage={nightSkyImage}
+        backgroundImage={'var(--stars-image)'}
         rows={starRows}
-        width="210vw"
-        height="130vh"
+        width='210vw'
+        height='130vh'
         rowStyles={Array.from({ length: starRows }, (_, _i) => ({
-          animation: `panToRight ${duration * (1 + starRows - _i)}s linear infinite`,
+          animation: `panToRight ${duration * (1 + starRows - _i * delta)}s steps(${steps}) infinite `,
         }))}
         cellStyle={{
           transformOrigin: 'center center',
@@ -32,8 +33,10 @@ export const Home = ({ children }: { children?: React.ReactNode }) => {
         }}
       />
 
+      <Earth className={styles.earth} />
+
       <div className={styles.overlay}>
-        <Timeline currentPhoto="home" />
+        <Timeline currentPhoto='home' title='Photos' />
 
         <article className={styles.main}>
           <header className={`${headerStyles.header} ${styles.header}`}>
@@ -43,10 +46,7 @@ export const Home = ({ children }: { children?: React.ReactNode }) => {
           <Description text={descriptionHTML} visible={true} />
 
           {children}
-
-          <Earth className={styles.earth} />
         </article>
-
       </div>
     </main>
   );

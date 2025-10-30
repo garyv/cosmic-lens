@@ -1,6 +1,6 @@
 .home {
   background-color: black;
-  height: 100vh;
+  height: min(100dvh, 100vh);
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -33,5 +33,10 @@
 }
 
 .earth {
-  margin: auto auto -150px auto;
+  /* margin: auto auto -150px auto; */
+
+  padding: absolute;
+  bottom: 340px;
+  left: 50%;
+  margin-left: -200px;
 }

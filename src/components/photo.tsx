@@ -6,8 +6,9 @@ import {
   type ReactZoomPanPinchContentRef,
 } from 'react-zoom-pan-pinch';
 import { Description } from './description.tsx';
+import { Timeline } from './timeline.tsx';
 import { useDebounce } from '../hooks/use-debounce.ts';
-import classNames from './photo.module.css';
+import style from './photo.module.css';
 import { getConfig } from '../config.ts';
 
 const { sizes } = getConfig('production') as { sizes: number[] };
@@ -24,24 +25,20 @@ const zoomStep = 0.2;
 
 const Controls = ({ zoomIn, zoomOut }: ReactZoomPanPinchContentRef) => {
   return (
-    <div
-      className={classNames.toolbar}
-      role="toolbar"
-      aria-label="Image controls"
-    >
+    <div className={style.toolbar} role='toolbar' aria-label='Image controls'>
       <button
-        className={classNames.button}
+        className={style.button}
         onClick={() => zoomIn()}
-        title="Zoom in"
-        type="button"
+        title='Zoom in'
+        type='button'
       >
         ＋
       </button>
       <button
-        className={classNames.button}
+        className={style.button}
         onClick={() => zoomOut()}
-        title="Zoom out"
-        type="button"
+        title='Zoom out'
+        type='button'
       >
         −
       </button>
@@ -50,9 +47,9 @@ const Controls = ({ zoomIn, zoomOut }: ReactZoomPanPinchContentRef) => {
 };
 
 const Header = ({ title }: { title: string }) => (
-  <header className={classNames.header}>
+  <header className={style.header}>
     <h1>
-      <Link to="/" title="Back to home">
+      <Link to='/' title='Back to home'>
         ←{' '}
       </Link>
       <span title={title}>{title}</span>
@@ -62,16 +59,16 @@ const Header = ({ title }: { title: string }) => (
 
 const Info = ({ onClick }: { onClick: () => void }) => (
   <div
-    className={`${classNames.toolbar} ${classNames.right} ${classNames.bottom}`}
-    role="toolbar"
+    className={`${style.toolbar} ${style.right} ${style.bottom}`}
+    role='toolbar'
   >
     <button
-      className={classNames.button}
-      title="More Info"
-      type="button"
+      className={style.button}
+      title='More Info'
+      type='button'
       onClick={onClick}
     >
-      <i className={classNames.info}>i</i>
+      <i className={style.info}>i</i>
     </button>
   </div>
 );
@@ -98,11 +95,11 @@ const getSourceSet = (
 
 const Picture = React.forwardRef<HTMLImageElement, PhotoProps>(
   ({ photoId, scale = 1, coverScale = 1 }, ref) => (
-    <div className={classNames.picture}>
+    <div className={style.picture}>
       <picture>
         <source
           srcSet={getSourceSet(photoId, { scale, coverScale })}
-          type="image/avif"
+          type='image/avif'
         />
         <source
           srcSet={getSourceSet(photoId, {
@@ -111,12 +108,13 @@ const Picture = React.forwardRef<HTMLImageElement, PhotoProps>(
             baseSizes: [1024, 768, 320],
             format: 'jpeg',
           })}
-          type="image/jpeg"
+          type='image/jpeg'
         />
         <img
           ref={ref}
-          className={classNames.img}
+          className={style.img}
           src={`/images/320/${photoId}.jpeg`}
+          tabIndex={0}
         />
       </picture>
     </div>
@@ -161,6 +159,11 @@ export const Photo = ({ photoId }: PhotoProps) => {
       setIsGazeMode(false);
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
+        if (getIsPanelFocused()) {
+          // delay activating gaze mode due to panel focus
+          resetTimer();
+          return;
+        }
         setIsGazeMode(true);
       }, gazeModeDelay);
     };
@@ -235,6 +238,8 @@ export const Photo = ({ photoId }: PhotoProps) => {
       const setTransform = transformComponentRef.current?.setTransform;
       const instance = transformComponentRef.current?.instance;
       if (!img || !setTransform || !instance) return;
+
+      img.focus();
 
       const currentZoom = Math.round(state.scale * 100) / 100;
       const currentX = state.positionX;
@@ -313,11 +318,13 @@ export const Photo = ({ photoId }: PhotoProps) => {
     return () => window.removeEventListener('resize', debouncedHandleResize);
   }, [isZoomInitialized, debouncedHandleResize]);
 
+  const handleInfoClick = useCallback(() => {
+    setIsDescriptionVisible((previous) => !previous);
+  }, []);
+
   return (
-    <main
-      className={`${classNames.main} ${isGazeMode ? classNames.gazeMode : ''}`}
-    >
-      <div className={classNames.wrapper}>
+    <main className={`${style.main} ${isGazeMode ? style.gazeMode : ''}`}>
+      <div className={style.wrapper}>
         <TransformWrapper
           initialScale={zoom}
           minScale={minZoom}
@@ -350,11 +357,14 @@ export const Photo = ({ photoId }: PhotoProps) => {
       {description && (
         <>
           <Description text={description} visible={isDescriptionVisible} />
-          <Info
-            onClick={() => setIsDescriptionVisible((previous) => !previous)}
-          />
+          <Info onClick={handleInfoClick} />
         </>
       )}
+      <Timeline currentPhoto={photoId} className={style.timeline} />
     </main>
   );
 };
+
+const getIsPanelFocused = () =>
+  // determine if focus is on an interactive panel element
+  !document.activeElement?.tagName.match(/^(body|img)$/i) ? true : false;

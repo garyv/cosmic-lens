@@ -1,15 +1,16 @@
 .main {
-  height: 100vh;
+  height: min(100dvh, 100vh);
   width: 100vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  --gutter: 70px;
 }
 
 .wrapper {
   flex-shrink: 0;
-  height: 100vh;
-  margin-bottom: -100vh;
+  height: min(100dvh, 100vh);
+  margin-bottom: max(-100dvh, -100vh);
 
   .toolbar {
     top: -60px;
@@ -18,7 +19,7 @@
 }
 
 .picture {
-  height: 100vh;
+  height: min(100dvh, 100vh);
   width: 100vw;
 }
 
@@ -31,11 +32,10 @@
 }
 
 .header,
-.description,
-.toolbar {
-  position: relative;
+.toolbar,
+.timeline {
   transition:
-    opacity 0.3s ease-out,
+    opacity 0.3s ease-out 0.15s,
     visibility 0.15s ease-out 0.3s;
 }
 
@@ -44,9 +44,10 @@
   margin-inline-start: 10px;
   margin-top: 10px;
   padding: 10px;
+  position: relative;
   border-radius: 8px;
   width: fit-content;
-  max-width: calc(100vw - 40px);
+  max-width: calc(100vw - 10px - 10px);
 
   h1 {
     margin: 0;
@@ -67,9 +68,10 @@
 
 .toolbar {
   background: var(--panel-background);
-  color: var(--text-color);
+  color: var(--fill);
   border-radius: 8px;
   display: flex;
+  position: relative;
   padding: 10px;
   width: fit-content;
   gap: 10px;
@@ -89,7 +91,7 @@
   all: unset;
   background: transparent;
   border-radius: 5px;
-  border: 1px solid var(--text-color);
+  border: 1px solid var(--fill);
   color: inherit;
   cursor: pointer;
   font: inherit;
@@ -115,8 +117,11 @@
   outline-offset: 2px;
 }
 
-.gazeMode .header,
-.gazeMode .toolbar {
-  opacity: 0;
-  visibility: hidden;
+.gazeMode {
+  .header,
+  .toolbar,
+  .timeline {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
