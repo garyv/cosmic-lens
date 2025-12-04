@@ -10,7 +10,7 @@ const photoMeta = normalizePhotoData(photoData);
 
 /** milliseconds */
 const delays = {
-  click: 150,
+  click: 100,
   hold: 500,
   fadeOut: 300,
   expand: 800,
@@ -62,9 +62,9 @@ export const Timeline = ({
 
       // copy old preview for a fade out transition
       fadeOutPreview();
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         setPreview(photoId);
-      });
+      }, delays.click);
 
       if (event?.clientY && previewRef.current) {
         previewRef.current.style.top = `${event.clientY}px`;

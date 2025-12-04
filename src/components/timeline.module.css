@@ -180,6 +180,7 @@
 .detail {
   display: none;
 
+  .container:hover &,
   .container:focus-within & {
     display: block;
   }
