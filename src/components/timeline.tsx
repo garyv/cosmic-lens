@@ -19,10 +19,8 @@ const delays = {
 export const Timeline = ({
   currentPhoto = 'home',
   title = 'Cosmic Lens',
-  active = false,
   className = '',
 }) => {
-  const [isExpanded, setIsExpanded] = useState(() => active);
   const [preview, setPreview] = useState('');
   const headerRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,7 +33,6 @@ export const Timeline = ({
 
   // reset state when navigating to a new photo or page
   useEffect(() => {
-    setIsExpanded(() => active);
     setPreview('');
   }, [location.pathname]);
 
@@ -83,14 +80,6 @@ export const Timeline = ({
     headerRef.current?.focus();
   }, []);
 
-  const focusOnThis = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement>) => {
-      if (hasFocusWithin(event.currentTarget)) return;
-      event.currentTarget.focus();
-    },
-    []
-  );
-
   const handleMove = useCallback((_event: React.MouseEvent) => {
     if (leaveTimeRef.current) {
       clearTimeout(leaveTimeRef.current);
@@ -101,12 +90,11 @@ export const Timeline = ({
   const handleLeave = useCallback(() => {
     leaveTimeRef.current = window.setTimeout(() => {
       changePreview('');
-      setIsExpanded(false);
       if (hasFocusWithin(containerRef.current)) {
         blurActiveElement();
       }
     }, delays.expand);
-  }, [changePreview, setIsExpanded]);
+  }, [changePreview]);
 
   const navigate = useNavigate();
 
@@ -157,7 +145,7 @@ export const Timeline = ({
               photoId=''
               lightyears={0}
               className={styles.earth}
-              onClick={(e) => {
+              onClick={() => {
                 if (preview === 'home') navigate({ to: '/' });
               }}
               onMouseEnter={(e) => changePreview('home', e)}
