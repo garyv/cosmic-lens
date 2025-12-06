@@ -138,6 +138,7 @@
     display: block;
     width: 160px;
     height: auto;
+    max-height: 160px;
     border-radius: 100%;
     margin-left: 10%;
   }

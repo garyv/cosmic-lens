@@ -7,6 +7,7 @@ const { sizes, quality, max } = getConfig();
 
 const format = 'avif';
 const legacyFormat = 'jpeg';
+const fit = 'outside';
 const sourceDir = path.resolve('src/photos');
 const outputDir = path.resolve('public/images');
 const isDryRun = process.argv.includes('--dry-run');
@@ -71,7 +72,7 @@ const generateSizes = async (sourcePath: string, photoId: string) => {
       // generate resized image normally
       if ((await fileExists(imagePath)) === false) {
         await source
-          .resize(size, size, { fit: 'cover' })
+          .resize(size, size, { fit })
           .toFormat(format, { quality })
           .toFile(imagePath);
       }
@@ -107,7 +108,7 @@ const generateSizes = async (sourcePath: string, photoId: string) => {
     );
     if (await fileExists(legacyPath)) continue;
     await source
-      .resize(size, size, { fit: 'cover' })
+      .resize(size, size, { fit })
       .toFormat(legacyFormat, { quality })
       .toFile(legacyPath);
   }

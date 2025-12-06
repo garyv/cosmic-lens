@@ -8,7 +8,7 @@
     "build": "NODE_ENV=production npm run gen && vite build && tsc",
     "preview": "NODE_ENV=production npm run gen && vite preview",
     "test": "vitest run",
-    "gen": "tsx src/scripts/generate-images.ts",
+    "gen": "NODE_ENV=production tsx src/scripts/generate-images.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
