@@ -19,7 +19,7 @@ export type PhotoProps = {
   coverScale?: number;
 };
 
-const maxZoom = 10;
+const maxZoom = 9;
 const gazeModeDelay = 3000;
 const zoomStep = 0.2;
 

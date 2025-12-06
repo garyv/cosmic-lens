@@ -10,7 +10,7 @@ const photoMeta = normalizePhotoData(photoData);
 
 /** milliseconds */
 const delays = {
-  click: 100,
+  click: 300,
   hold: 500,
   fadeOut: 300,
   expand: 800,
@@ -21,6 +21,7 @@ export const Timeline = ({
   title = 'Cosmic Lens',
   className = '',
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [preview, setPreview] = useState('');
   const headerRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,7 @@ export const Timeline = ({
   const oldPreviewRef = useRef<HTMLDivElement>(null);
   const previewImgRef = useRef<HTMLImageElement>(null);
   const leaveTimeRef = useRef(0);
+  const previewChangeTime = useRef(0);
 
   const location = useLocation();
 
@@ -60,12 +62,13 @@ export const Timeline = ({
     (photoId: string, event?: React.MouseEvent<HTMLElement>) => {
       if (photoId === preview) return; // preview already loaded
 
+      previewChangeTime.current = Date.now(); // record time for debounce
+
       // copy old preview for a fade out transition
       fadeOutPreview();
-      setTimeout(() => {
-        setPreview(photoId);
-      }, delays.click);
+      setPreview(photoId);
 
+      // move preview relative to cursor hover
       if (event?.clientY && previewRef.current) {
         previewRef.current.style.top = `${event.clientY}px`;
         previewRef.current.style.marginLeft = `${event.clientX}px`;
@@ -74,12 +77,6 @@ export const Timeline = ({
     [preview, fadeOutPreview, setPreview, previewRef.current]
   );
 
-  const focusOnHeader = useCallback(() => {
-    // if the timeline is not focused, focus on the header
-    if (hasFocusWithin(containerRef.current)) return;
-    headerRef.current?.focus();
-  }, []);
-
   const handleMove = useCallback((_event: React.MouseEvent) => {
     if (leaveTimeRef.current) {
       clearTimeout(leaveTimeRef.current);
@@ -87,12 +84,15 @@ export const Timeline = ({
     }
   }, []);
 
+  const handleEnter = useCallback(() => {
+    setIsExpanded(true);
+  }, []);
+
   const handleLeave = useCallback(() => {
     leaveTimeRef.current = window.setTimeout(() => {
+      if (hasFocusWithin(containerRef.current)) return; // keep open if timeline has focus
       changePreview('');
-      if (hasFocusWithin(containerRef.current)) {
-        blurActiveElement();
-      }
+      setIsExpanded(false);
     }, delays.expand);
   }, [changePreview]);
 
@@ -102,6 +102,7 @@ export const Timeline = ({
     (photoId: string, _event: React.MouseEvent<HTMLAnchorElement>) => {
       // follows link only once preview is loaded
       if (preview !== photoId) return;
+      if (Date.now() - previewChangeTime.current < delays.click) return; // debounce
       navigate({ to: '/$photoId', params: { photoId } });
     },
     [preview]
@@ -109,10 +110,10 @@ export const Timeline = ({
 
   return (
     <div
-      className={`${styles.container} ${className}`}
+      className={`${styles.container} ${className} ${isExpanded ? styles.expanded : ''}`}
       onMouseLeave={handleLeave}
       onMouseMove={handleMove}
-      onPointerEnter={focusOnHeader}
+      onPointerEnter={handleEnter}
       ref={containerRef}
     >
       <nav
@@ -237,10 +238,6 @@ function normalizePhotoData(globResult: Record<string, PhotoMeta>) {
 function hasFocusWithin(element: HTMLElement | null) {
   if (!element) return false;
   return element.contains(document.activeElement);
-}
-
-function blurActiveElement() {
-  (document.activeElement as HTMLElement)?.blur();
 }
 
 type PhotoMeta = {

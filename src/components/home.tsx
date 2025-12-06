@@ -8,7 +8,7 @@ import styles from './home.module.css';
 import '../components/stars.css';
 
 const starRows = 6; // how many parallex rows of stars
-const duration = 90; // how long to pan stars
+const duration = 35; // how long to pan stars - reduce to speed up stars
 const delta = 1.5; // different speeds in each row of parallex stars
 const steps = 2_000; // total animation frames - reduce for perforance, increase for smoothness
 

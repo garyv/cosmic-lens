@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import classNames from './description.module.css';
 
 export const Description = ({
@@ -6,26 +5,13 @@ export const Description = ({
   visible,
   className,
   ...rest
-}: DescriptionProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setTimeout(() => {
-      if (!ref.current) return;
-      ref.current?.focus();
-    }, 50);
-  }, [visible]);
-
-  return (
-    <article
-      tabIndex={visible ? 0 : -1}
-      {...rest}
-      ref={ref}
-      className={`${classNames.description} ${visible ? classNames.visible : ''} ${className}`}
-      dangerouslySetInnerHTML={{ __html: text }}
-    ></article>
-  );
-};
+}: DescriptionProps) => (
+  <article
+    {...rest}
+    className={`${classNames.description} ${visible ? classNames.visible : ''} ${className}`}
+    dangerouslySetInnerHTML={{ __html: text }}
+  ></article>
+);
 
 type DescriptionProps = {
   text: string;

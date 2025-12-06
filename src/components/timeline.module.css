@@ -7,7 +7,6 @@
   height: fit-content;
   backdrop-filter: blur(3px);
   left: 10px;
-  max-height: calc(100vh - 150px);
   padding: 2px;
   position: absolute;
   text-align: left;
@@ -115,6 +114,7 @@
 }
 
 .main {
+  max-height: calc(100vh - 220px);
   overflow: auto;
 }
 
@@ -180,8 +180,7 @@
 .detail {
   display: none;
 
-  .container:hover &,
-  .container:focus-within & {
+  .expanded & {
     display: block;
   }
 }

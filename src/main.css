@@ -6,6 +6,7 @@
   --background: hsl(240, 30%, 8%);
   --active-color: hsl(51, 91%, 77%);
   --active-border: 2px;
+  --gutter: 50px;
 }
 
 body {
