@@ -38,6 +38,21 @@ export const Timeline = ({
     setPreview('');
   }, [location.pathname]);
 
+  // clicking off timeline closes expanded state
+  useEffect(() => {
+    const handleClick = ({ target }: MouseEvent) => {
+      if (!isExpanded) return;
+      if (containerRef.current?.contains(target as Node)) return;
+      setPreview('');
+      setIsExpanded(false);
+      if (hasFocusWithin(containerRef.current)) {
+        blurActiveElement();
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [containerRef.current, setIsExpanded, isExpanded]);
+
   const fadeOutPreview = () => {
     if (oldPreviewRef.current) {
       const fadingClone = previewImgRef.current?.cloneNode(true) as HTMLElement;
@@ -238,6 +253,9 @@ function normalizePhotoData(globResult: Record<string, PhotoMeta>) {
 function hasFocusWithin(element: HTMLElement | null) {
   if (!element) return false;
   return element.contains(document.activeElement);
+}
+function blurActiveElement() {
+  (document.activeElement as HTMLElement)?.blur();
 }
 
 type PhotoMeta = {
