@@ -114,7 +114,6 @@ const Picture = React.forwardRef<HTMLImageElement, PhotoProps>(
           ref={ref}
           className={style.img}
           src={`/images/320/${photoId}.jpeg`}
-          tabIndex={0}
         />
       </picture>
     </div>
@@ -146,6 +145,11 @@ export const Photo = ({ photoId }: PhotoProps) => {
       ? `${meta.title} - Cosmic Lens`
       : 'Cosmic Lens';
   }, [meta]);
+
+  // reset zoom when new page loads
+  useEffect(() => {
+    setIsZoomInitialized(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isDescriptionVisible) {

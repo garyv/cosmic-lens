@@ -24,10 +24,10 @@
 
 .img {
   display: block;
-  flex: 1 0 100vmin;
-  height: 100vmin;
-  min-width: 100vmin;
-  object-fit: cover;
+  height: auto;
+  width: auto;
+  max-height: 100%;
+  max-width: 100%;
 }
 
 .header,
