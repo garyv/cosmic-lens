@@ -49,8 +49,8 @@ export const Timeline = ({
         blurActiveElement();
       }
     };
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
+    document.addEventListener('pointerdown', handleClick);
+    return () => document.removeEventListener('pointerdown', handleClick);
   }, [containerRef.current, setIsExpanded, isExpanded]);
 
   const fadeOutPreview = () => {
