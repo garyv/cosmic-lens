@@ -50,7 +50,7 @@
 
   h1 {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 1.125em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -99,7 +99,7 @@
     color 0.1s,
     border-color 0.1s,
     box-shadow 0.1s;
-  font-size: 20px;
+  font-size: 1.25em;
   line-height: 1;
   font-family: ui-monospace, monospace;
   user-select: none;

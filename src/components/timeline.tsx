@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from '@tanstack/react-router';
+import earthImg from '../images/blue_marble.webp';
 import { format } from '../hooks/format-big-number.ts';
 import styles from './timeline.module.css';
 
@@ -86,7 +87,7 @@ export const Timeline = ({
       // move preview relative to cursor hover
       if (event?.clientY && previewRef.current) {
         previewRef.current.style.top = `${event.clientY}px`;
-        previewRef.current.style.marginLeft = `${event.clientX}px`;
+        // previewRef.current.style.marginLeft = `${event.clientX}px`;
       }
     },
     [preview, fadeOutPreview, setPreview, previewRef.current]
@@ -180,6 +181,13 @@ export const Timeline = ({
               ref={previewImgRef}
             />
           </Link>
+        )}
+        {preview === 'home' && (
+          <img
+            src={earthImg}
+            alt='A view of planet Earth from space, showing the blue oceans, white clouds, and brown and green landmasses.'
+            ref={previewImgRef}
+          />
         )}
         <div
           className={styles.fading}

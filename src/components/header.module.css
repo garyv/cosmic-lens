@@ -10,7 +10,7 @@
 
   h1 {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 1.125em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

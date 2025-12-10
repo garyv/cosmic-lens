@@ -32,9 +32,21 @@
   width: auto;
 }
 
-.earth {
-  /* margin: auto auto -150px auto; */
+/* center description on large screens */
+@media screen and (min-width: 38em) {
+  .description {
+    margin-right: auto;
+  }
+}
 
+@media screen and (min-height: 40em) {
+  .description {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+}
+
+.earth {
   padding: absolute;
   bottom: 340px;
   left: 50%;

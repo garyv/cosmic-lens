@@ -43,7 +43,11 @@ export const Home = ({ children }: { children?: React.ReactNode }) => {
             <h1>Cosmic Lens</h1>
           </header>
 
-          <Description text={descriptionHTML} visible={true} />
+          <Description
+            text={descriptionHTML}
+            visible={true}
+            className={styles.description}
+          />
 
           {children}
         </article>
