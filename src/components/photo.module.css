@@ -42,19 +42,34 @@
   background: var(--panel-background);
   margin-inline-start: 10px;
   margin-top: 10px;
-  padding: 10px;
   position: relative;
   border-radius: 8px;
   width: fit-content;
   max-width: calc(100vw - 10px - 10px);
 
   h1 {
+    padding: 10px;
     margin: 0;
     font-size: 1.125em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+  }
+
+  a {
+    display: inline-flex;
+    margin-right: 10px;
+    padding: 2px 5px;
+
+    &:hover,
+    &:focus {
+      fill: var(--active-color);
+      color: var(--active-color);
+      outline: 2px solid var(--active-color);
+      outline-offset: var(--active-border);
+      border-radius: 5px;
+    }
   }
 }
 
@@ -90,30 +105,23 @@
   all: unset;
   background: transparent;
   border-radius: 5px;
-  border: 1px solid var(--fill);
+  border: 2px solid var(--fill);
   color: inherit;
   cursor: pointer;
   font: inherit;
   padding: 4px 6px;
-  transition:
-    color 0.1s,
-    border-color 0.1s,
-    box-shadow 0.1s;
   font-size: 1.25em;
   line-height: 1;
   font-family: ui-monospace, monospace;
   user-select: none;
-}
 
-.button:hover {
-  color: var(--white-cool);
-  border-color: var(--white-cool);
-  box-shadow: 0 0 2px var(--white-cool);
-}
-
-.button:focus-visible {
-  outline: 2px solid #3af;
-  outline-offset: 2px;
+  &:hover,
+  &:focus {
+    --active-color: var(--earth-blue);
+    border-color: var(--active-color);
+    color: var(--active-color);
+    fill: var(--active-color);
+  }
 }
 
 .gazeMode {

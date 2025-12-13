@@ -5,6 +5,7 @@
   --panel-background: hsla(240, 30%, 8%, 0.412);
   --background: hsl(240, 30%, 8%);
   --active-color: hsl(51, 91%, 77%);
+  --earth-blue: hsla(197, 56%, 60%, 1);
   --active-border: 2px;
   --gutter: 50px;
   --font-size: clamp(1em, 2.18vh, 1.5em);

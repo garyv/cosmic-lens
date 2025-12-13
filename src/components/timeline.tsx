@@ -78,6 +78,7 @@ export const Timeline = ({
     (photoId: string, event?: React.MouseEvent<HTMLElement>) => {
       if (photoId === preview) return; // preview already loaded
 
+      setIsExpanded(true);
       previewChangeTime.current = Date.now(); // record time for debounce
 
       // copy old preview for a fade out transition
@@ -174,7 +175,7 @@ export const Timeline = ({
 
       <div className={`${styles.preview}`} ref={previewRef}>
         {!!preview && preview !== 'home' && (
-          <Link to='/$photoId' params={{ photoId: preview }}>
+          <Link to='/$photoId' params={{ photoId: preview }} tabIndex={-1}>
             <img
               src={`/images/320/${preview}.avif`}
               alt={photoMeta[preview]?.alt}
@@ -183,11 +184,13 @@ export const Timeline = ({
           </Link>
         )}
         {preview === 'home' && (
-          <img
-            src={earthImg}
-            alt='A view of planet Earth from space, showing the blue oceans, white clouds, and brown and green landmasses.'
-            ref={previewImgRef}
-          />
+          <Link to='/' tabIndex={-1}>
+            <img
+              src={earthImg}
+              alt='A view of planet Earth from space, showing the blue oceans, white clouds, and brown and green landmasses.'
+              ref={previewImgRef}
+            />
+          </Link>
         )}
         <div
           className={styles.fading}

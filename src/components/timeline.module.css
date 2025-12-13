@@ -104,7 +104,7 @@
 }
 
 .earth {
-  --active-color: hsla(197, 56%, 60%, 1);
+  --active-color: var(--earth-blue);
   --fill: var(--active-color);
 }
 
@@ -112,7 +112,8 @@
   .earth {
     --fill: var(--white-warm);
 
-    &:hover {
+    &:hover,
+    &:focus {
       --fill: var(--active-color);
     }
   }
@@ -158,14 +159,25 @@
     color: var(--fill);
     font-size: 16px;
     margin: 0;
+    left: 15px;
     padding: 5px 10px;
-    width: 160px;
+    width: 140px;
     z-index: 3;
-  }
 
-  a {
-    display: block;
-    text-decoration: none;
+    > a {
+      display: block;
+      text-decoration: none;
+
+      &:hover,
+      &:focus {
+        color: var(--active-color);
+      }
+
+      &:focus {
+        outline: 2px solid var(--active-color);
+        outline-offset: -(var(--active-border));
+      }
+    }
   }
 }
 
