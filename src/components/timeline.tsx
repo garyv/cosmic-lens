@@ -11,7 +11,7 @@ const photoMeta = normalizePhotoData(photoData);
 
 /** milliseconds */
 const delays = {
-  click: 300,
+  click: 360,
   hold: 500,
   fadeOut: 300,
   expand: 800,
@@ -88,7 +88,6 @@ export const Timeline = ({
       // move preview relative to cursor hover
       if (event?.clientY && previewRef.current) {
         previewRef.current.style.top = `${event.clientY}px`;
-        // previewRef.current.style.marginLeft = `${event.clientX}px`;
       }
     },
     [preview, fadeOutPreview, setPreview, previewRef.current]
@@ -130,12 +129,12 @@ export const Timeline = ({
       className={`${styles.container} ${className} ${isExpanded ? styles.expanded : ''}`}
       onMouseLeave={handleLeave}
       onMouseMove={handleMove}
-      onPointerEnter={handleEnter}
       ref={containerRef}
     >
       <nav
         id='timeline'
         className={`${styles.timeline} ${preview ? styles.previewing : ''}`}
+        onPointerEnter={handleEnter}
       >
         <header className={styles.header} tabIndex={0} ref={headerRef}>
           <img src='/images/telescope.svg' alt='' width={20} height={20} />
@@ -231,17 +230,11 @@ const PhotoLink = ({
       onClick={handleClick}
       {...rest}
     >
-      <Icon />
+      <i className={styles.icon}>●</i>
       <span className={styles.detail}>{format(lightyears)} lightyears</span>
     </a>
   );
 };
-
-const Icon = (params: React.HTMLAttributes<HTMLSpanElement>) => (
-  <i {...params} className={styles.icon}>
-    ●
-  </i>
-);
 
 function sortByLightYears(
   [, a]: [string, PhotoMeta],
