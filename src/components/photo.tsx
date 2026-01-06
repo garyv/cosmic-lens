@@ -161,7 +161,7 @@ export const Photo = ({ photoId }: PhotoProps) => {
 
     const resetTimer = () => {
       setIsGazeMode(false);
-      window.clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
         if (getIsPanelFocused()) {
           // delay activating gaze mode due to panel focus
@@ -173,15 +173,15 @@ export const Photo = ({ photoId }: PhotoProps) => {
     };
 
     interactionEvents.forEach((event) => {
-      window.addEventListener(event, resetTimer);
+      addEventListener(event, resetTimer);
     });
 
     resetTimer();
 
     return () => {
-      window.clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       interactionEvents.forEach((event) => {
-        window.removeEventListener(event, resetTimer);
+        removeEventListener(event, resetTimer);
       });
     };
   }, [isDescriptionVisible]);
@@ -226,6 +226,7 @@ export const Photo = ({ photoId }: PhotoProps) => {
       const newMinScale = calculateCoverZoom(img);
       instance.setup.minScale = newMinScale;
       setCoverScale(newMinScale);
+      setMinZoom(newMinScale);
 
       // reset zoom if current zoom is below new minimum
       if (zoom < newMinScale) {
@@ -318,8 +319,8 @@ export const Photo = ({ photoId }: PhotoProps) => {
   useEffect(() => {
     if (!isZoomInitialized) return;
 
-    window.addEventListener('resize', debouncedHandleResize);
-    return () => window.removeEventListener('resize', debouncedHandleResize);
+    addEventListener('resize', debouncedHandleResize);
+    return () => removeEventListener('resize', debouncedHandleResize);
   }, [isZoomInitialized, debouncedHandleResize]);
 
   const handleInfoClick = useCallback(() => {
