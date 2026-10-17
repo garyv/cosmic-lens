@@ -8,15 +8,18 @@ import {
 import { Description } from './description.tsx';
 import { Timeline } from './timeline.tsx';
 import { useDebounce } from '../hooks/use-debounce.ts';
+import { getPhotoImages, type PhotoImages } from '../photos/image-manifest.ts';
 import style from './photo.module.css';
-import { getConfig } from '../config.ts';
-
-const { sizes } = getConfig('production') as { sizes: number[] };
 
 export type PhotoProps = {
   photoId: string;
-  scale?: number;
-  coverScale?: number;
+};
+
+// unknown photos render an empty picture instead of failing
+const missingImages: PhotoImages = {
+  aspectRatio: 1,
+  widths: [],
+  jpegWidths: [],
 };
 
 const maxZoom = 9;
@@ -75,50 +78,93 @@ const Info = ({ onClick }: { onClick: () => void }) => (
 
 const getSourceSet = (
   photoId: string,
-  { scale = 1, baseSizes = sizes, format = 'avif', coverScale = 1 } = {}
-) => {
-  // filter out sizes that are too small for the current scale
-  const effectiveSizes = baseSizes.filter(
-    (size) => size >= 320 * scale * coverScale
-  );
-
-  // if all sizes filtered out return just the largest size
-  if (effectiveSizes.length === 0) {
-    const largestSize = baseSizes[baseSizes.length - 1];
-    return `/images/${largestSize}/${photoId}.${format}`;
-  }
-
-  return effectiveSizes
-    .map((size) => `/images/${size}/${photoId}.${format} ${size}w`)
+  widths: number[],
+  format: 'avif' | 'jpeg'
+) =>
+  widths
+    .map((width) => `/images/${width}/${photoId}.${format} ${width}w`)
     .join(', ');
+
+type PictureProps = {
+  photoId: string;
+  images: PhotoImages;
+
+  /** css pixel width the photo is shown at, so the browser picks a file for its own pixel ratio */
+  displayWidth: number;
+  onPointerDown: () => void;
 };
 
-const Picture = React.forwardRef<HTMLImageElement, PhotoProps>(
-  ({ photoId, scale = 1, coverScale = 1 }, ref) => (
-    <div className={style.picture}>
-      <picture>
-        <source
-          srcSet={getSourceSet(photoId, { scale, coverScale })}
-          type='image/avif'
-        />
-        <source
-          srcSet={getSourceSet(photoId, {
-            scale,
-            coverScale,
-            baseSizes: [1024, 768, 320],
-            format: 'jpeg',
-          })}
-          type='image/jpeg'
-        />
-        <img
-          ref={ref}
-          className={style.img}
-          src={`/images/320/${photoId}.jpeg`}
-        />
-      </picture>
-    </div>
-  )
+const Picture = React.forwardRef<HTMLImageElement, PictureProps>(
+  ({ photoId, images, displayWidth, onPointerDown }, ref) => {
+    const sizes = `${Math.ceil(displayWidth)}px`;
+
+    return (
+      <div className={style.picture} onPointerDown={onPointerDown}>
+        <picture>
+          <source
+            srcSet={getSourceSet(photoId, images.widths, 'avif')}
+            sizes={sizes}
+            type='image/avif'
+          />
+          <source
+            srcSet={getSourceSet(photoId, images.jpegWidths, 'jpeg')}
+            sizes={sizes}
+            type='image/jpeg'
+          />
+          {/* box size comes from the aspect ratio so a file swap can never move the photo */}
+          <img
+            ref={ref}
+            className={style.img}
+            src={`/images/320/${photoId}.jpeg`}
+            style={
+              { '--aspect-ratio': images.aspectRatio } as React.CSSProperties
+            }
+          />
+        </picture>
+      </div>
+    );
+  }
 );
+
+/** size of the photo fitted inside the viewport, before zoom */
+const getFittedSize = (aspectRatio: number) => {
+  const width = Math.min(innerWidth, innerHeight * aspectRatio);
+  return { width, height: width / aspectRatio };
+};
+
+/** zoom and position where the fitted photo covers the viewport, centered */
+const getCoverTransform = (aspectRatio: number) => {
+  const windowRatio = innerWidth / innerHeight;
+
+  // ratio of larger aspect to smaller aspect
+  const scale =
+    Math.max(windowRatio, aspectRatio) / Math.min(windowRatio, aspectRatio);
+  const { width, height } = getFittedSize(aspectRatio);
+
+  return {
+    scale,
+    x: (innerWidth - width * scale) / 2,
+    y: (innerHeight - height * scale) / 2,
+  };
+};
+
+/** limits a position so the zoomed photo never leaves part of the viewport empty */
+const getBoundedPosition = (
+  aspectRatio: number,
+  scale: number,
+  x: number,
+  y: number
+) => {
+  // library scale is relative to the fitted photo
+  const fitted = getFittedSize(aspectRatio);
+  const maxX = Math.max(0, fitted.width * scale - innerWidth);
+  const maxY = Math.max(0, fitted.height * scale - innerHeight);
+
+  return {
+    x: Math.min(0, Math.max(-maxX, x)),
+    y: Math.min(0, Math.max(-maxY, y)),
+  };
+};
 
 const interactionEvents = [
   'mousemove',
@@ -130,26 +176,37 @@ const interactionEvents = [
 ];
 
 export const Photo = ({ photoId }: PhotoProps) => {
+  const images = getPhotoImages(photoId) ?? missingImages;
+  const { aspectRatio } = images;
+
+  // start at cover zoom so the first paint is already in place
+  const [initialTransform] = useState(() => getCoverTransform(aspectRatio));
+
   const [meta, setMeta] = useState<any>(null);
   const [description, setDescription] = useState<string | null>(null);
   const [isGazeMode, setIsGazeMode] = useState(false);
   const [isDescriptionVisible, setIsDescriptionVisible] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [isZoomInitialized, setIsZoomInitialized] = useState(false);
-  const [minZoom, setMinZoom] = useState(1);
-  const [coverScale, setCoverScale] = useState(1);
+  const [zoom, setZoom] = useState(initialTransform.scale);
+  const [minZoom, setMinZoom] = useState(initialTransform.scale);
+  const [displayWidth, setDisplayWidth] = useState(
+    () => getFittedSize(aspectRatio).width * initialTransform.scale
+  );
   const imageRef = useRef<HTMLImageElement>(null);
+
+  // only grow the requested image size so zooming out keeps the sharper file
+  const growDisplayWidth = useCallback(
+    (newZoom: number) => {
+      const width = getFittedSize(aspectRatio).width * newZoom;
+      setDisplayWidth((previous) => Math.max(previous, width));
+    },
+    [aspectRatio]
+  );
 
   useEffect(() => {
     document.title = meta?.title
       ? `${meta.title} - Cosmic Lens`
       : 'Cosmic Lens';
   }, [meta]);
-
-  // reset zoom when new page loads
-  useEffect(() => {
-    setIsZoomInitialized(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     if (isDescriptionVisible) {
@@ -215,25 +272,41 @@ export const Photo = ({ photoId }: PhotoProps) => {
 
   const handleZoomUpdate = useDebounce((newZoom: number) => {
     setZoom(newZoom);
+    growDisplayWidth(newZoom);
   }, 150);
 
   const handleResize = useCallback(() => {
-    const img = imageRef.current;
     const instance = transformComponentRef?.current?.instance;
     const setTransform = transformComponentRef?.current?.setTransform;
 
-    if (img && instance && setTransform) {
-      const newMinScale = calculateCoverZoom(img);
-      instance.setup.minScale = newMinScale;
-      setCoverScale(newMinScale);
-      setMinZoom(newMinScale);
+    if (instance && setTransform) {
+      const cover = getCoverTransform(aspectRatio);
+      const { scale, positionX, positionY } = instance.transformState;
+
+      // a photo zoomed all the way out stays at cover zoom, for example when a phone rotates
+      const isAtCover = scale <= instance.setup.minScale + 0.001;
+
+      instance.setup.minScale = cover.scale;
+      setMinZoom(cover.scale);
 
       // reset zoom if current zoom is below new minimum
-      if (zoom < newMinScale) {
-        setTransform(0, 0, newMinScale, 0);
+      if (isAtCover || scale < cover.scale) {
+        growDisplayWidth(cover.scale);
+        setTransform(cover.x, cover.y, cover.scale, 0);
+        return;
       }
+
+      // keep the zoomed photo covering the resized viewport
+      const bounded = getBoundedPosition(
+        aspectRatio,
+        scale,
+        positionX,
+        positionY
+      );
+      growDisplayWidth(scale);
+      setTransform(bounded.x, bounded.y, scale, 0);
     }
-  }, [zoom]);
+  }, [aspectRatio, growDisplayWidth]);
 
   const debouncedHandleResize = useDebounce(handleResize, 150);
 
@@ -247,95 +320,51 @@ export const Photo = ({ photoId }: PhotoProps) => {
       img.focus();
 
       const currentZoom = Math.round(state.scale * 100) / 100;
-      const currentX = state.positionX;
-      const currentY = state.positionY;
-
-      // library scale is already relative to the fitted image so we just need fitted dimensions
-      const fitScale = Math.min(
-        window.innerWidth / img.naturalWidth,
-        window.innerHeight / img.naturalHeight
+      const bounded = getBoundedPosition(
+        aspectRatio,
+        state.scale,
+        state.positionX,
+        state.positionY
       );
 
-      // current display size with library scale applied to fitted size
-      const displayWidth = img.naturalWidth * fitScale * currentZoom;
-      const displayHeight = img.naturalHeight * fitScale * currentZoom;
-
-      const maxX = Math.max(0, displayWidth - window.innerWidth);
-      const maxY = Math.max(0, displayHeight - window.innerHeight);
-
-      const boundedX = Math.min(0, Math.max(-maxX, currentX));
-      const boundedY = Math.min(0, Math.max(-maxY, currentY));
-
-      if (boundedX !== currentX || boundedY !== currentY) {
-        setTransform(boundedX, boundedY, currentZoom, 0);
+      if (bounded.x !== state.positionX || bounded.y !== state.positionY) {
+        setTransform(bounded.x, bounded.y, state.scale, 0);
       }
 
       if (Math.abs(currentZoom - zoom) >= zoomStep) {
         handleZoomUpdate(currentZoom);
       }
     },
-    [zoom, handleZoomUpdate]
+    [zoom, handleZoomUpdate, aspectRatio]
   );
 
-  const calculateCoverZoom = (img: HTMLImageElement) => {
-    // aspect ratios
-    const windowRatio = window.innerWidth / window.innerHeight;
-    const imageRatio = img.naturalWidth / img.naturalHeight;
-
-    // ratio of larger aspect to smaller aspect
-    return (
-      Math.max(windowRatio, imageRatio) / Math.min(windowRatio, imageRatio)
-    );
-  };
-
   useEffect(() => {
-    const img = imageRef.current;
-    const instance = transformComponentRef?.current?.instance;
-    const setTransform = transformComponentRef?.current?.setTransform;
-
-    const applyZoomAndRecalculateBounds = (newZoom: number) => {
-      if (instance && setTransform) {
-        instance.setup.minScale = newZoom;
-        setTransform(0, 0, newZoom, 0);
-        setIsZoomInitialized(true);
-        setMinZoom(newZoom);
-        setCoverScale(newZoom);
-      }
-    };
-
-    if (img?.complete && !isZoomInitialized) {
-      const newZoom = calculateCoverZoom(img);
-      applyZoomAndRecalculateBounds(newZoom);
-    } else if (img && !isZoomInitialized) {
-      const handleLoad = () => {
-        const newZoom = calculateCoverZoom(img);
-        applyZoomAndRecalculateBounds(newZoom);
-      };
-      img.addEventListener('load', handleLoad);
-      return () => img.removeEventListener('load', handleLoad);
-    }
-  }, [photoId, isZoomInitialized]);
-
-  useEffect(() => {
-    if (!isZoomInitialized) return;
-
     addEventListener('resize', debouncedHandleResize);
     return () => removeEventListener('resize', debouncedHandleResize);
-  }, [isZoomInitialized, debouncedHandleResize]);
+  }, [debouncedHandleResize]);
 
   const handleInfoClick = useCallback(() => {
     setIsDescriptionVisible((previous) => !previous);
+  }, []);
+
+  // clicking the photo takes focus off the toolbar so gaze mode can start
+  const handlePhotoPointerDown = useCallback(() => {
+    if (getIsPanelFocused()) {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
   }, []);
 
   return (
     <main className={`${style.main} ${isGazeMode ? style.gazeMode : ''}`}>
       <div className={style.wrapper}>
         <TransformWrapper
-          initialScale={zoom}
+          initialScale={initialTransform.scale}
+          initialPositionX={initialTransform.x}
+          initialPositionY={initialTransform.y}
           minScale={minZoom}
           maxScale={maxZoom}
           ref={transformComponentRef}
-          centerOnInit={true}
+          centerOnInit={false}
           centerZoomedOut={false}
           limitToBounds={true}
           onTransformed={handleTransform}
@@ -349,8 +378,9 @@ export const Photo = ({ photoId }: PhotoProps) => {
                 <Picture
                   ref={imageRef}
                   photoId={photoId}
-                  scale={zoom}
-                  coverScale={coverScale}
+                  images={images}
+                  displayWidth={displayWidth}
+                  onPointerDown={handlePhotoPointerDown}
                 />
               </TransformComponent>
               <Controls {...utils} />

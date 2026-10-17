@@ -7,7 +7,8 @@
     "start": "npm run dev",
     "build": "NODE_ENV=production npm run gen && vite build && tsc",
     "preview": "NODE_ENV=production npm run gen && vite preview",
-    "test": "vitest run",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "test:browser": "playwright test",
     "gen": "NODE_ENV=production tsx src/scripts/generate-images.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
@@ -24,22 +25,19 @@
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@rollup/plugin-yaml": "^4.1.2",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/react": "^16.2.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@types/three": "^0.180.0",
     "@vitejs/plugin-react": "^5.0.4",
     "husky": "^9.1.7",
-    "jsdom": "^27.0.0",
     "lint-staged": "^16.2.3",
     "prettier": "^3.6.2",
     "sharp": "^0.34.4",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
-    "vitest": "^3.0.5",
     "web-vitals": "^5.1.0"
   },
   "lint-staged": {

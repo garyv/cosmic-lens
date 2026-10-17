@@ -182,3 +182,115 @@ import styles from './home.module.css';
 3. **Consistency** - follow existing patterns in the codebase
 4. **Readability** - code should be easy to read and understand
 5. **Maintainability** - code should be easy to modify and extend
+
+## Testing
+
+A test suite should read as a plain description of what the code does. Someone new should learn the behavior from the test names alone, and a failure should point at one behavior.
+
+### Choosing a runner
+
+- **Start with `node:test`** and `node:assert/strict`. It's built in and adds no dependencies.
+- **Use Playwright Test when the behavior lives in a real browser or a running app** (service workers, caches, navigation, other apps or servers it talks to). Run the real build in real Chrome, and fake only the outside world. Playwright beat unit-level mocks for this: the mocks needed a large harness and still missed real browser behavior.
+
+### What makes a test worth keeping
+
+Test the features that matter, not every function or branch. A green run should show that those features work, and each red test should name the feature that broke. A small suite gets read, run often, and trusted. When a draft suite looks large, check each test against the features and cut the ones that don't map to one.
+
+- It tests what a user or another system sees, not internal calls or state.
+- It costs what it earns. Cut tests that repeat another test's coverage. Merge checks that need the same expensive setup into one test with steps.
+
+### Fakes
+
+The goal is tests you can trust without reading the fakes.
+
+- Prefer the real thing when you can run it. Fake only what you don't own or can't run: servers, other apps, platform APIs.
+- Fake at the boundary the code already has (network, config, injected globals). Don't change production code to make it testable.
+- One small fake per concept, with controls named in domain terms (`deploy`, `network`, `releaseApiFails`). Keep scenarios as data.
+- If a fake grows past about 150 lines, stop and rethink the design.
+- Don't mock the unit under test.
+
+### Known bugs and current behavior
+
+When testing code you aren't changing, keep the suite green. Pin what the code does today. For a known bug, add a skipped test (`it.todo`, or `test.fixme` in Playwright) that asserts the intended behavior, with a one-line comment naming the bug. The fix turns it on.
+
+### Structure and wording
+
+- **One `describe` per thing**, named with a short noun (`slugify`, `updates`). Nest one level at most, for a variant (`Electron`).
+- **Each test names one behavior** as a plain sentence: "returns undefined when the path does NOT exist".
+- **Name things instead of using pronouns.** Write "asks the Electron updater", not "asks its updater".
+- **Capitalize `NOT`** so negative cases stand out.
+- **Put details in step names** (Playwright `test.step`), as `context: outcome`, for example "offline: v2 launches from cache".
+- **Test files hold only scenarios.** Setup, fakes, and page helpers live in `test/support/`.
+- Otherwise follow the comment style: lowercase prose, short sentences, plain punctuation.
+
+### Test data
+
+Keep data files small and hand-written, covering every branch the code walks, not copies of production data. Load them through a small helper instead of inlining large literals.
+
+### Examples
+
+`node:test`:
+
+```ts
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { slugify } from '../src/keys.ts';
+
+describe('slugify', () => {
+  it('lowercases and joins words with dashes', () => {
+    assert.equal(slugify('Hello World'), 'hello-world');
+  });
+
+  it('does NOT emit trailing dashes after truncation', () => {
+    assert.ok(!slugify('word-word-word-word', 12).endsWith('-'));
+  });
+});
+```
+
+Playwright Test, with fixtures and fakes from `test/support/`:
+
+```ts
+import { expect, test } from './support/fixtures';
+import { APP, failureScreen, modeSelection, swVersion } from './support/device';
+import { V2 } from './support/releases';
+
+test.describe('updates', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(APP);
+    await expect(modeSelection(page)).toBeVisible();
+  });
+
+  test('installs v2 on the next launch', async ({ page, context, cloud }) => {
+    cloud.deploy('v2');
+    await page.reload();
+
+    await test.step('relaunch: switches to v2', async () => {
+      await expect.poll(() => swVersion(page)).toBe(V2.version);
+    });
+
+    await test.step('offline: v2 launches from cache', async () => {
+      await context.setOffline(true);
+      await page.reload();
+      expect(await swVersion(page)).toBe(V2.version);
+    });
+  });
+
+  // known bug: a missing file on the CDN loops forever; the fix turns this on
+  test.fixme('shows UpdateError when a deploy is broken', async ({ page, cloud }) => {
+    cloud.deploy('v2');
+    cloud.unavailable('main.js');
+    await page.reload();
+    await expect(failureScreen(page, 'UpdateError')).toBeVisible();
+  });
+
+  test.describe('Electron', () => {
+    test.use({ platform: 'electron' });
+
+    test('asks the Electron updater, NOT the release API', async ({ page, cloud }) => {
+      await page.reload();
+      await expect(modeSelection(page)).toBeVisible();
+      expect(cloud.requested('/release')).toBe(0);
+    });
+  });
+});
+```

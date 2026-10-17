@@ -17,7 +17,7 @@ This is a portfolio piece demonstrating up-to-date React and web development ski
 
 ## Technical Approach
 
-- Static site hosted on Netlify
+- Static site hosted on Netlify, production at https://cosmic-lens.netlify.app/
 - Multi-page web app using TanStack Router
 - Responsive image generation with Sharp
 - CSS Modules for styling

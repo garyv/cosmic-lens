@@ -10,7 +10,8 @@ function RouteComponent() {
 
     return (
         <>
-            <Photo photoId={photoId} />
+            {/* keyed so each photo starts with fresh zoom state */}
+            <Photo key={photoId} photoId={photoId} />
         </>
     );
 }

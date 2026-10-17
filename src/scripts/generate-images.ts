@@ -2,27 +2,45 @@ import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import { getConfig } from '../config.ts';
+import type { ImageManifest, PhotoImages } from '../photos/image-manifest.ts';
 
 const { sizes, quality, max } = getConfig();
 
 const format = 'avif';
 const legacyFormat = 'jpeg';
-const fit = 'outside';
+const legacySizes = [320, 768];
 const sourceDir = path.resolve('src/photos');
 const outputDir = path.resolve('public/images');
+const manifestPath = path.join(sourceDir, 'images.json');
 const isDryRun = process.argv.includes('--dry-run');
 
 async function main() {
-  const photoFolders = await fs.readdir(sourceDir);
+  const photoFolders = (await fs.readdir(sourceDir, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
 
   console.log(
     `Reading source photos from ${sourceDir}: ${'.'.repeat(photoFolders.length)}`
   );
 
+  // keep entries from earlier runs, but drop photos that no longer exist
+  const manifest = Object.fromEntries(
+    Object.entries(await readManifest()).filter(([photoId]) =>
+      photoFolders.includes(photoId)
+    )
+  );
+
   for (const folder of photoFolders.slice(0, max)) {
     const photoPath = path.join(sourceDir, folder);
 
-    await processPhoto(photoPath);
+    manifest[folder] = await processPhoto(photoPath);
+  }
+
+  if (!isDryRun) {
+    await fs.writeFile(
+      manifestPath,
+      JSON.stringify(sortKeys(manifest), null, 2) + '\n'
+    );
   }
 
   console.log(`Done adding resized images to ${outputDir}`);
@@ -40,80 +58,83 @@ const processPhoto = async (photoDir: string) => {
 
   const photoId = path.basename(photoDir);
 
-  await generateSizes(path.join(photoDir, sourceFile), photoId);
+  return generateSizes(path.join(photoDir, sourceFile), photoId);
 };
 
-const generateSizes = async (sourcePath: string, photoId: string) => {
+const generateSizes = async (
+  sourcePath: string,
+  photoId: string
+): Promise<PhotoImages> => {
   const source = sharp(sourcePath);
   const metadata = await source.metadata();
   const sourceWidth = metadata.width || 0;
+  const sourceHeight = metadata.height || 0;
 
-  // find the largest size that fits within source width
-  const maxValidSize =
-    sizes.filter((s) => s <= sourceWidth).sort((a, b) => b - a)[0] || sizes[0];
+  // every width is real, never upscaled past the source
+  const widths = sizes.filter((size) => size <= sourceWidth);
+
+  // add the full source width when it is smaller than the largest size
+  if (sourceWidth < Math.max(...sizes) && !widths.includes(sourceWidth)) {
+    widths.push(sourceWidth);
+  }
+  widths.sort((a, b) => a - b);
+
+  const jpegWidths = legacySizes.filter((size) => size <= sourceWidth);
 
   process.stdout.write(
-    `Generating ${photoId} (source: ${sourceWidth}px) in sizes: ${sizes.join(', ')} `
+    `Generating ${photoId} (source: ${sourceWidth}px) in widths: ${widths.join(', ')} `
   );
 
-  for (const size of sizes) {
+  for (const width of widths) {
     process.stdout.write('.');
-
-    if (isDryRun) continue;
-
-    const sizePath = path.join(outputDir, String(size));
-    if ((await fileExists(sizePath)) === false) {
-      await fs.mkdir(sizePath, { recursive: true });
-    }
-
-    const imagePath = path.join(sizePath, `${photoId}.${format}`);
-
-    if (size <= sourceWidth) {
-      // generate resized image normally
-      if ((await fileExists(imagePath)) === false) {
-        await source
-          .resize(size, size, { fit })
-          .toFormat(format, { quality })
-          .toFile(imagePath);
-      }
-    } else {
-      // size is larger than source so create symlink to largest valid size
-      const targetPath = path.join(
-        outputDir,
-        String(maxValidSize),
-        `${photoId}.${format}`
-      );
-
-      // create symlink for main format using relative path for portability
-      if ((await fileExists(imagePath)) === false) {
-        const relativeTarget = path.relative(sizePath, targetPath);
-        try {
-          await fs.symlink(relativeTarget, imagePath);
-        } catch (err) {
-          // if symlink fails copy the file instead
-          console.warn(`\nSymlink failed for ${imagePath}, copying instead`);
-          await fs.copyFile(targetPath, imagePath);
-        }
-      }
-    }
+    await writeImage(source, photoId, width, format);
   }
 
-  // legacy jpeg format for thumbnail and standard size
-  const legacySizes = [sizes[sizes.length - 1], sizes[sizes.length - 3]];
-  for (const size of legacySizes) {
-    const legacyPath = path.join(
-      outputDir,
-      String(size),
-      `${photoId}.${legacyFormat}`
-    );
-    if (await fileExists(legacyPath)) continue;
-    await source
-      .resize(size, size, { fit })
-      .toFormat(legacyFormat, { quality })
-      .toFile(legacyPath);
+  for (const width of jpegWidths) {
+    await writeImage(source, photoId, width, legacyFormat);
   }
   process.stdout.write('\n');
+
+  return {
+    aspectRatio: sourceWidth / sourceHeight,
+    widths,
+    jpegWidths,
+  };
 };
+
+const writeImage = async (
+  source: sharp.Sharp,
+  photoId: string,
+  width: number,
+  imageFormat: 'avif' | 'jpeg'
+) => {
+  if (isDryRun) return;
+
+  const sizePath = path.join(outputDir, String(width));
+  await fs.mkdir(sizePath, { recursive: true });
+
+  const imagePath = path.join(sizePath, `${photoId}.${imageFormat}`);
+  if (await fileExists(imagePath)) return;
+
+  await source
+    .clone()
+    .resize({ width, withoutEnlargement: true })
+    .toFormat(imageFormat, { quality })
+    .toFile(imagePath);
+};
+
+const readManifest = async (): Promise<ImageManifest> => {
+  try {
+    return JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  } catch {
+    return {};
+  }
+};
+
+const sortKeys = (manifest: ImageManifest) =>
+  Object.fromEntries(
+    Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b))
+  );
 
 const fileExists = async (filePath: string): Promise<boolean> => {
   try {

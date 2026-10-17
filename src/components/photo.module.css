@@ -22,12 +22,12 @@
   width: 100vw;
 }
 
+/* sized from the photo aspect ratio, never from the loaded file */
 .img {
   display: block;
+  aspect-ratio: var(--aspect-ratio);
+  width: min(100vw, calc(min(100dvh, 100vh) * var(--aspect-ratio)));
   height: auto;
-  width: auto;
-  max-height: 100%;
-  max-width: 100%;
 }
 
 .header,

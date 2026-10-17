@@ -14,3 +14,7 @@ count.txt
 
 # App specific
 # public/images
+
+# Playwright
+test-results
+playwright-report

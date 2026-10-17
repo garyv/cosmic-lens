@@ -1,5 +1,7 @@
 # Cosmic Lens
 
+Live site: https://cosmic-lens.netlify.app/
+
 Purpose: Gaze at photographs taken by the space telescopes including James Webb and Hubble. Automatically scale images to fit viewport. Be able to zoom and pan using user friendly controls, mouse, touch gestures. As an intermediate to senior developer, who has been professionally working exclusively on a closed source react app for years, this will be a portfolio piece, to show potential employers my up to date skills with react and web development.
 
 Extras - information to learn about what the photographs show
@@ -63,11 +65,12 @@ Path structure
 
 - Photo component
 
-/images/:size/:friendly-id.:format
+/images/:width/:friendly-id.:format
 
 - Image file automatically generated to desired size
-- Both height and width of image are intended to be least as large as the :size param
-- Generated image size should not exceed source Photo size
+- The :width folder is the real pixel width of the file, which the srcset `w` descriptors rely on
+- Generated image size never exceeds the source photo. Sizes larger than the source are skipped, and the full source width is added when it is smaller than the largest size
+- `src/photos/images.json` is generated alongside the files and lists each photo's real widths and aspect ratio, so the Photo component can size the image box before any file loads
 - Formats will all be AVIF for quality compression, with the exception of two JPEG for each, a one-size-fits-all that will look “good” enough on a legacy phone of browser (like 1024px) and jpeg fallback for thumbnail (320px).
 - Detect AVIF and give a small banner warning, in browsers larger than 1024px missing AVIF support explaining the poor image quality issue, that can be easily dismissed.
   —

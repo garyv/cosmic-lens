@@ -26,8 +26,7 @@ These dependencies are part of the current stack and acceptable to use:
 
 These are acceptable for development:
 
-- **vitest** - Testing framework
-- **@testing-library/react** - React testing utilities
+- **@playwright/test** - Browser tests against the real build in Chrome (unit tests use the built-in `node:test`)
 - **prettier** - Code formatting
 - **husky** - Git hooks
 - **lint-staged** - Pre-commit linting

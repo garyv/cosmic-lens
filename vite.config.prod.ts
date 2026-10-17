@@ -19,8 +19,3 @@ export default defineConfig({
     },
   },
 })
-
-export const test = {
-  globals: true,
-  environment: 'jsdom',
-}

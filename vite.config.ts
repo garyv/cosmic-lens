@@ -18,8 +18,3 @@ export default defineConfig({
     allowedHosts: ['garys-macbook-pro.local'],
   },
 });
-
-export const test = {
-  globals: true,
-  environment: 'jsdom',
-};
