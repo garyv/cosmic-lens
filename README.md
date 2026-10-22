@@ -138,7 +138,7 @@ Welcome to your new TanStack app!
 
 # Getting Started
 
-To run this application:
+To run this application (Node 24, which runs the TypeScript image generator directly):
 
 ```bash
 npm install
@@ -152,6 +152,20 @@ To build this application for production:
 ```bash
 npm run build
 ```
+
+# Deploying
+
+Netlify builds every push with `netlify.toml`: `npm run build` on Node 24, publishing `dist`.
+
+- `main` deploys production: https://cosmic-lens.netlify.app
+- `beta` deploys the beta site: https://beta--cosmic-lens.netlify.app
+
+Changes, including Netlify config changes, go through beta first:
+
+1. Work on a short feature branch, then merge it into `beta`.
+2. Verify beta: `BASE_URL=https://beta--cosmic-lens.netlify.app npm run test:browser`, a manual pass on desktop and a real phone, and the Netlify deploy log for warnings.
+3. Promote by fast-forwarding `main` to `beta`, then run the same suite with `BASE_URL=https://cosmic-lens.netlify.app`.
+4. If production breaks, use "Publish deploy" on the previous production deploy in Netlify, then fix forward on `beta`.
 
 ## Styling
 
@@ -195,7 +209,6 @@ Here is an example layout that includes a header:
 
 ```tsx
 import { Outlet, createRootRoute } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { Link } from '@tanstack/react-router';
 
@@ -209,12 +222,9 @@ export const Route = createRootRoute({
         </nav>
       </header>
       <Outlet />
-      <TanStackRouterDevtools />
     </>
   ),
 });
 ```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
 
 More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).

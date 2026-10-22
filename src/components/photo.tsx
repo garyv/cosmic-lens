@@ -3,7 +3,9 @@ import { Link } from '@tanstack/react-router';
 import {
   TransformWrapper,
   TransformComponent,
+  useControls,
   type ReactZoomPanPinchContentRef,
+  type ReactZoomPanPinchState,
 } from 'react-zoom-pan-pinch';
 import { Description } from './description.tsx';
 import { Timeline } from './timeline.tsx';
@@ -23,15 +25,22 @@ const missingImages: PhotoImages = {
 };
 
 const maxZoom = 9;
+const zoomFactor = 1.618;
+const zoomThreshold = 0.2;
 const gazeModeDelay = 3000;
-const zoomStep = 0.2;
 
-const Controls = ({ zoomIn, zoomOut }: ReactZoomPanPinchContentRef) => {
+const centerView = (): [number, number] => [innerWidth / 2, innerHeight / 2];
+
+const Controls = () => {
+  const { zoomToPoint, state } = useControls();
+
   return (
     <div className={style.toolbar} role='toolbar' aria-label='Image controls'>
       <button
         className={style.button}
-        onClick={() => zoomIn()}
+        onClick={() =>
+          zoomToPoint(state.scale * zoomFactor, ...centerView())
+        }
         title='Zoom in'
         type='button'
       >
@@ -39,7 +48,9 @@ const Controls = ({ zoomIn, zoomOut }: ReactZoomPanPinchContentRef) => {
       </button>
       <button
         className={style.button}
-        onClick={() => zoomOut()}
+        onClick={() =>
+          zoomToPoint(state.scale / zoomFactor, ...centerView())
+        }
         title='Zoom out'
         type='button'
       >
@@ -281,7 +292,7 @@ export const Photo = ({ photoId }: PhotoProps) => {
 
     if (instance && setTransform) {
       const cover = getCoverTransform(aspectRatio);
-      const { scale, positionX, positionY } = instance.transformState;
+      const { scale, positionX, positionY } = instance.state;
 
       // a photo zoomed all the way out stays at cover zoom, for example when a phone rotates
       const isAtCover = scale <= instance.setup.minScale + 0.001;
@@ -311,7 +322,7 @@ export const Photo = ({ photoId }: PhotoProps) => {
   const debouncedHandleResize = useDebounce(handleResize, 150);
 
   const handleTransform = useCallback(
-    ({ state }: { state: any }) => {
+    ({ state }: { state: ReactZoomPanPinchState }) => {
       const img = imageRef.current;
       const setTransform = transformComponentRef.current?.setTransform;
       const instance = transformComponentRef.current?.instance;
@@ -331,7 +342,7 @@ export const Photo = ({ photoId }: PhotoProps) => {
         setTransform(bounded.x, bounded.y, state.scale, 0);
       }
 
-      if (Math.abs(currentZoom - zoom) >= zoomStep) {
+      if (Math.abs(currentZoom - zoom) >= zoomThreshold) {
         handleZoomUpdate(currentZoom);
       }
     },
@@ -367,25 +378,22 @@ export const Photo = ({ photoId }: PhotoProps) => {
           centerOnInit={false}
           centerZoomedOut={false}
           limitToBounds={true}
-          onTransformed={handleTransform}
+          onTransform={handleTransform}
           disablePadding={true}
           wheel={{ disabled: false }}
-          alignmentAnimation={{ disabled: true }}
+          doubleClick={{ step: zoom }} // stepping by the current zoom doubles it
+          autoAlignment={{ disabled: true }}
         >
-          {(utils) => (
-            <>
-              <TransformComponent>
-                <Picture
-                  ref={imageRef}
-                  photoId={photoId}
-                  images={images}
-                  displayWidth={displayWidth}
-                  onPointerDown={handlePhotoPointerDown}
-                />
-              </TransformComponent>
-              <Controls {...utils} />
-            </>
-          )}
+          <TransformComponent>
+            <Picture
+              ref={imageRef}
+              photoId={photoId}
+              images={images}
+              displayWidth={displayWidth}
+              onPointerDown={handlePhotoPointerDown}
+            />
+          </TransformComponent>
+          <Controls />
         </TransformWrapper>
       </div>
       {meta?.title && <Header title={meta.title} />}

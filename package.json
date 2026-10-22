@@ -9,36 +9,33 @@
     "preview": "NODE_ENV=production npm run gen && vite preview",
     "test": "node --test \"src/**/*.test.ts\"",
     "test:browser": "playwright test",
-    "gen": "NODE_ENV=production tsx src/scripts/generate-images.ts",
+    "gen": "NODE_ENV=production node src/scripts/generate-images.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
-    "@netlify/vite-plugin-tanstack-start": "1.0.2",
-    "@tanstack/react-devtools": "^0.7.0",
-    "@tanstack/react-router": "^1.132.0",
-    "@tanstack/react-router-devtools": "^1.132.0",
-    "@tanstack/router-plugin": "^1.132.0",
+    "@tanstack/react-router": "^1.170.41",
+    "@tanstack/router-plugin": "^1.168.42",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-zoom-pan-pinch": "^3.7.0",
-    "three": "^0.180.0"
+    "react-zoom-pan-pinch": "^4.2.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
-    "@rollup/plugin-yaml": "^4.1.2",
-    "@types/node": "^22.10.2",
+    "@rollup/plugin-yaml": "^5.0.0",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "@types/three": "^0.180.0",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^5.0.4",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.3",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.6.2",
-    "sharp": "^0.34.4",
+    "sharp": "^0.35.5",
     "typescript": "^5.7.2",
-    "vite": "^7.1.7",
-    "web-vitals": "^5.1.0"
+    "vite": "^7.3.7",
+    "web-vitals": "^6.2.3"
   },
   "lint-staged": {
     "*.{ts,tsx,css,json,md}": [

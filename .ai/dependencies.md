@@ -4,10 +4,11 @@
 
 The following dependencies are **required** and should not be removed:
 
+- **Node.js** (24) - Runtime, pinned in `netlify.toml`; runs the TypeScript image generator and unit tests directly, without a compile step
 - **React** (^19.0.0) - Core UI framework
-- **Vite** (^7.1.7) - Build tool and dev server
+- **Vite** (^7.3.7) - Build tool and dev server
 - **TypeScript** (^5.7.2) - Type safety
-- **TanStack Router** (^1.132.0) - File-based routing
+- **TanStack Router** (^1.170.41) - File-based routing
 - **@vitejs/plugin-react** - React plugin for Vite
 - **@tanstack/router-plugin** - TanStack Router Vite plugin
 
@@ -15,12 +16,33 @@ The following dependencies are **required** and should not be removed:
 
 These dependencies are part of the current stack and acceptable to use:
 
-- **@netlify/vite-plugin-tanstack-start** - Netlify deployment integration
-- **react-zoom-pan-pinch** - Zoom/pan functionality
-- **three** - 3D graphics (for visual effects)
-- **sharp** - Image processing (dev dependency)
-- **@rollup/plugin-yaml** - YAML file imports
-- **web-vitals** - Performance monitoring
+- **react-zoom-pan-pinch** (^4.2.0) - Zoom/pan functionality. Zoom steps add to the scale, so `photo.tsx` sizes each step from the current scale to zoom by a constant factor
+- **three** (^0.186.1) - 3D graphics (for visual effects)
+- **sharp** (^0.35.5) - Image processing (dev dependency)
+- **@rollup/plugin-yaml** (^5.0.0) - YAML file imports
+- **web-vitals** (^6.2.3) - Performance monitoring
+
+## Removed Dependencies
+
+- **@netlify/vite-plugin-tanstack-start** - only used by an unreferenced `vite.config.prod.ts`; Netlify builds the static site with `vite.config.ts`. It pulled in most of the dependency tree and its security advisories
+- **@tanstack/react-devtools**, **@tanstack/react-router-devtools** - only referenced in commented-out code
+- **tsx** - was never a direct dependency, only installed through the Netlify plugin; Node 24 runs the image generator instead
+
+## Deferred Major Versions
+
+Recorded 2026-10-21. Each one is free of known advisories on the current major.
+
+- **vite 8** - moves to the Rolldown bundler; 7.3.7 has the dev-server security fixes
+- **@vitejs/plugin-react 6** - requires vite 8
+- **typescript 7** - the new native compiler; 5.9 is fine
+- **@types/node 25+** - stays on 24 to match the pinned Node version
+
+## Updating Dependencies
+
+- Only install versions published at least two weeks ago, e.g. `npm install --before=<date>`
+- Never use `npm audit fix --force` or `--legacy-peer-deps`
+- Review new package names and new install scripts in the `package-lock.json` diff
+- Run `npm audit signatures`, then a clean `npm ci`, build, unit tests and Playwright on all device projects
 
 ## Development Dependencies
 

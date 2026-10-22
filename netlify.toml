@@ -1,6 +1,9 @@
 [build]
   command = "npm run build"
-  dir = "dist/client"
+  dir = "dist"
+[build.environment]
+  # node 24 runs the typescript image generator without a compile step
+  NODE_VERSION = "24"
 [dev]
   command = "npm run dev"
   port = 3000

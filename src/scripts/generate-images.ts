@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import sharp from 'sharp';
+import sharp, { type Sharp } from 'sharp';
 import { getConfig } from '../config.ts';
 import type { ImageManifest, PhotoImages } from '../photos/image-manifest.ts';
 
@@ -103,7 +103,7 @@ const generateSizes = async (
 };
 
 const writeImage = async (
-  source: sharp.Sharp,
+  source: Sharp,
   photoId: string,
   width: number,
   imageFormat: 'avif' | 'jpeg'
