@@ -22,3 +22,23 @@ export type ImageManifest = Record<string, PhotoImages>;
  */
 export const getPhotoImages = (photoId: string): PhotoImages | undefined =>
   (manifest as ImageManifest)[photoId];
+
+/**
+ * Lists a photo's generated files for a viewer that picks its own width, like the planetarium.
+ *
+ * @param photoId - The photo folder name, for example `cosmic-background`.
+ * @returns Avif files as `sources` and jpeg files as `fallbackSources`, each with its real width.
+ */
+export const getSkySources = (photoId: string) => {
+  const images = getPhotoImages(photoId);
+  const toSources = (widths: number[] = [], format: 'avif' | 'jpeg') =>
+    widths.map((width) => ({
+      url: `/images/${width}/${photoId}.${format}`,
+      width,
+    }));
+
+  return {
+    sources: toSources(images?.widths, 'avif'),
+    fallbackSources: toSources(images?.jpegWidths, 'jpeg'),
+  };
+};

@@ -17,7 +17,7 @@ The following dependencies are **required** and should not be removed:
 These dependencies are part of the current stack and acceptable to use:
 
 - **react-zoom-pan-pinch** (^4.2.0) - Zoom/pan functionality. Zoom steps add to the scale, so `photo.tsx` sizes each step from the current scale to zoom by a constant factor
-- **three** (^0.186.1) - 3D graphics (for visual effects)
+- **three** (^0.186.1) - 3D graphics for the Earth and the planetarium
 - **sharp** (^0.35.5) - Image processing (dev dependency)
 - **@rollup/plugin-yaml** (^5.0.0) - YAML file imports
 - **web-vitals** (^6.2.3) - Performance monitoring
@@ -52,6 +52,7 @@ These are acceptable for development:
 - **prettier** - Code formatting
 - **husky** - Git hooks
 - **lint-staged** - Pre-commit linting
+- **ffmpeg** - system tool, not an npm package; only `convert-milky-way.ts` needs it, once, to read NASA's OpenEXR map
 
 ## Adding New Dependencies
 

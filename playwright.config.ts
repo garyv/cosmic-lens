@@ -5,7 +5,7 @@ const baseURL = process.env.BASE_URL ?? 'http://localhost:4173';
 
 export default defineConfig({
   testDir: 'test',
-  testMatch: '*.spec.ts',
+  testMatch: '*.test.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: 'list',

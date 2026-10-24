@@ -5,3 +5,6 @@ declination:
 camera: Wilkinson Microwave Anisotropy Probe (WMAP)
 lightyears: 13770000000
 year: 2012
+viewer: planetarium
+projection: mollweide
+frame: galactic

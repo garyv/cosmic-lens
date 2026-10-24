@@ -10,17 +10,21 @@ const format = 'avif';
 const legacyFormat = 'jpeg';
 const legacySizes = [320, 768];
 const sourceDir = path.resolve('src/photos');
+// all-sky images for the planetarium, which are not photos in the timeline
+const skyDir = path.resolve('src/sky');
 const outputDir = path.resolve('public/images');
 const manifestPath = path.join(sourceDir, 'images.json');
 const isDryRun = process.argv.includes('--dry-run');
 
 async function main() {
-  const photoFolders = (await fs.readdir(sourceDir, { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
+  const photoPaths = [
+    ...(await readFolders(sourceDir)),
+    ...(await readFolders(skyDir)),
+  ];
+  const photoFolders = photoPaths.map((photoPath) => path.basename(photoPath));
 
   console.log(
-    `Reading source photos from ${sourceDir}: ${'.'.repeat(photoFolders.length)}`
+    `Reading source photos from ${sourceDir} and ${skyDir}: ${'.'.repeat(photoFolders.length)}`
   );
 
   // keep entries from earlier runs, but drop photos that no longer exist
@@ -30,10 +34,8 @@ async function main() {
     )
   );
 
-  for (const folder of photoFolders.slice(0, max)) {
-    const photoPath = path.join(sourceDir, folder);
-
-    manifest[folder] = await processPhoto(photoPath);
+  for (const photoPath of photoPaths.slice(0, max)) {
+    manifest[path.basename(photoPath)] = await processPhoto(photoPath);
   }
 
   if (!isDryRun) {
@@ -122,6 +124,12 @@ const writeImage = async (
     .toFormat(imageFormat, { quality })
     .toFile(imagePath);
 };
+
+async function readFolders(dir: string) {
+  return (await fs.readdir(dir, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(dir, entry.name));
+}
 
 const readManifest = async (): Promise<ImageManifest> => {
   try {

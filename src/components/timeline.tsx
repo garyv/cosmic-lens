@@ -2,12 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from '@tanstack/react-router';
 import earthImg from '../images/blue_marble.webp';
 import { format } from '../hooks/format-big-number.ts';
+import { photoMeta, type PhotoMeta } from '../photos/photo-meta.ts';
 import styles from './timeline.module.css';
-
-const photoData = import.meta.glob('../photos/*/meta.yaml', {
-  eager: true,
-}) as Record<string, PhotoMeta>;
-const photoMeta = normalizePhotoData(photoData);
 
 /** milliseconds */
 const delays = {
@@ -214,7 +210,9 @@ const PhotoLink = ({
   className = '',
   onClick,
   ...rest
-}: Partial<PhotoMeta> & React.HTMLAttributes<HTMLAnchorElement>) => {
+}: Partial<PhotoMeta> & {
+  photoId?: string;
+} & React.HTMLAttributes<HTMLAnchorElement>) => {
   // using <a> instead of Tanstack <Link> to prevent default action
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // always prevent default link click.
@@ -236,24 +234,6 @@ const PhotoLink = ({
   );
 };
 
-function sortByLightYears(
-  [, a]: [string, PhotoMeta],
-  [, b]: [string, PhotoMeta]
-) {
-  return b.lightyears - a.lightyears;
-}
-
-function normalizePhotoData(globResult: Record<string, PhotoMeta>) {
-  return Object.fromEntries(
-    Object.entries(globResult)
-      .sort(sortByLightYears)
-      .map(([path, value]) => {
-        const key = path.match(/\/([^/]+)\/meta\.yaml$/)?.[1] ?? path;
-        return [key, value];
-      })
-  );
-}
-
 function hasFocusWithin(element: HTMLElement | null) {
   if (!element) return false;
   return element.contains(document.activeElement);
@@ -261,14 +241,3 @@ function hasFocusWithin(element: HTMLElement | null) {
 function blurActiveElement() {
   (document.activeElement as HTMLElement)?.blur();
 }
-
-type PhotoMeta = {
-  photoId: string; // deep-field
-  title: string; // “Deep Field” Lensing Galaxy Cluster
-  alt: string; // Image showing thousands of distant galaxies of different shapes, sizes, colors, and brightness, with a scattering of bright foreground stars.
-  rightAscension: string; // 07:23:19.5
-  declination: string; // -73:27:15.6
-  camera: string; // James Webb Space Telescope NIRCam
-  lightyears: number; //  4240000000
-  year: number; // 2022
-};

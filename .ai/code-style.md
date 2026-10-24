@@ -190,7 +190,7 @@ A test suite should read as a plain description of what the code does. Someone n
 ### Choosing a runner
 
 - **Start with `node:test`** and `node:assert/strict`. It's built in and adds no dependencies.
-- **Use Playwright Test when the behavior lives in a real browser or a running app** (service workers, caches, navigation, other apps or servers it talks to). Run the real build in real Chrome, and fake only the outside world. Playwright beat unit-level mocks for this: the mocks needed a large harness and still missed real browser behavior.
+- **Use Playwright Test when the behavior lives in a real browser** (rendering, input, navigation, network). Run the real build in real Chrome, and fake only the outside world. Mocking a browser takes a large harness and still misses real behavior.
 
 ### What makes a test worth keeping
 
@@ -203,9 +203,9 @@ Test the features that matter, not every function or branch. A green run should 
 
 The goal is tests you can trust without reading the fakes.
 
-- Prefer the real thing when you can run it. Fake only what you don't own or can't run: servers, other apps, platform APIs.
+- Prefer the real thing when you can run it. Fake only what you don't own or can't run: servers, devices, platform APIs.
 - Fake at the boundary the code already has (network, config, injected globals). Don't change production code to make it testable.
-- One small fake per concept, with controls named in domain terms (`deploy`, `network`, `releaseApiFails`). Keep scenarios as data.
+- One small fake per concept, with controls named in domain terms (`loseSignal`, `goOffline`, `cloudyNight`). Keep scenarios as data.
 - If a fake grows past about 150 lines, stop and rethink the design.
 - Don't mock the unit under test.
 
@@ -215,11 +215,11 @@ When testing code you aren't changing, keep the suite green. Pin what the code d
 
 ### Structure and wording
 
-- **One `describe` per thing**, named with a short noun (`slugify`, `updates`). Nest one level at most, for a variant (`Electron`).
+- **One `describe` per thing**, named with a short noun (`slugify`, `star map`). Nest one level at most, for a variant (`southern hemisphere`).
 - **Each test names one behavior** as a plain sentence: "returns undefined when the path does NOT exist".
-- **Name things instead of using pronouns.** Write "asks the Electron updater", not "asks its updater".
+- **Name things instead of using pronouns.** Write "shows the star's name", not "shows its name".
 - **Capitalize `NOT`** so negative cases stand out.
-- **Put details in step names** (Playwright `test.step`), as `context: outcome`, for example "offline: v2 launches from cache".
+- **Put details in step names** (Playwright `test.step`), as `context: outcome`, for example "signal lost: the last view stays on screen".
 - **Test files hold only scenarios.** Setup, fakes, and page helpers live in `test/support/`.
 - Otherwise follow the comment style: lowercase prose, short sentences, plain punctuation.
 
@@ -251,45 +251,36 @@ Playwright Test, with fixtures and fakes from `test/support/`:
 
 ```ts
 import { expect, test } from './support/fixtures';
-import { APP, failureScreen, modeSelection, swVersion } from './support/device';
-import { V2 } from './support/releases';
+import { openStarMap, starName } from './support/star-map';
 
-test.describe('updates', () => {
+test.describe('star map', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(APP);
-    await expect(modeSelection(page)).toBeVisible();
+    await openStarMap(page);
   });
 
-  test('installs v2 on the next launch', async ({ page, context, cloud }) => {
-    cloud.deploy('v2');
-    await page.reload();
-
-    await test.step('relaunch: switches to v2', async () => {
-      await expect.poll(() => swVersion(page)).toBe(V2.version);
+  test('finds a star by name', async ({ page, telescope }) => {
+    await test.step('search: Betelgeuse is named on screen', async () => {
+      await page.getByRole('searchbox').fill('Betelgeuse');
+      await expect(starName(page, 'Betelgeuse')).toBeVisible();
     });
 
-    await test.step('offline: v2 launches from cache', async () => {
-      await context.setOffline(true);
-      await page.reload();
-      expect(await swVersion(page)).toBe(V2.version);
+    await test.step('signal lost: the last view stays on screen', async () => {
+      telescope.loseSignal();
+      await expect(starName(page, 'Betelgeuse')).toBeVisible();
     });
   });
 
-  // known bug: a missing file on the CDN loops forever; the fix turns this on
-  test.fixme('shows UpdateError when a deploy is broken', async ({ page, cloud }) => {
-    cloud.deploy('v2');
-    cloud.unavailable('main.js');
-    await page.reload();
-    await expect(failureScreen(page, 'UpdateError')).toBeVisible();
+  // known bug: stars below the horizon keep their names; the fix turns this on
+  test.fixme('hides the names of stars below the horizon', async ({ page }) => {
+    await expect(starName(page, 'Canopus')).toBeHidden();
   });
 
-  test.describe('Electron', () => {
-    test.use({ platform: 'electron' });
+  test.describe('southern hemisphere', () => {
+    test.use({ latitude: -33 });
 
-    test('asks the Electron updater, NOT the release API', async ({ page, cloud }) => {
-      await page.reload();
-      await expect(modeSelection(page)).toBeVisible();
-      expect(cloud.requested('/release')).toBe(0);
+    test('shows the Southern Cross, NOT the Big Dipper', async ({ page }) => {
+      await expect(starName(page, 'Acrux')).toBeVisible();
+      await expect(starName(page, 'Dubhe')).toBeHidden();
     });
   });
 });

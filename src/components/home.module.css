@@ -6,12 +6,9 @@
   position: relative;
 }
 
-.stars {
-  padding: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.sky {
+  position: absolute;
+  inset: 0;
 }
 
 .overlay {
@@ -23,6 +20,15 @@
   width: 100%;
   height: 100%;
   z-index: 1;
+
+  /* empty space passes drags through to the sky, panels keep their own pointer events */
+  pointer-events: none;
+}
+
+.panel,
+.header,
+.description {
+  pointer-events: auto;
 }
 
 .main {
@@ -46,9 +52,18 @@
   }
 }
 
-.earth {
-  padding: absolute;
-  bottom: 340px;
-  left: 50%;
-  margin-left: -200px;
+/* zoom at the bottom left and info at the bottom right, where photo pages keep them */
+.zoom,
+.info {
+  position: absolute;
+  bottom: 10px;
+}
+
+.zoom {
+  left: 10px;
+  z-index: 2;
+}
+
+.info {
+  right: 10px;
 }

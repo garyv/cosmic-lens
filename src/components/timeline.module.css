@@ -38,6 +38,8 @@
     > img {
       height: 1.2em;
       width: 1.2em;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     &:focus {
@@ -78,6 +80,8 @@
   text-shadow: 0 0 4px var(--fill);
   margin-left: 0.75em;
   margin-right: 0.25em;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .link {

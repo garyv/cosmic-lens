@@ -53,6 +53,24 @@
       768
     ]
   },
+  "milky-way": {
+    "aspectRatio": 2,
+    "widths": [
+      320,
+      640,
+      768,
+      1024,
+      1280,
+      1920,
+      2560,
+      3840,
+      7680
+    ],
+    "jpegWidths": [
+      320,
+      768
+    ]
+  },
   "pillars-of-creation": {
     "aspectRatio": 0.5773528000548358,
     "widths": [

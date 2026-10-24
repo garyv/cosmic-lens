@@ -71,6 +71,7 @@ Path structure
 - The :width folder is the real pixel width of the file, which the srcset `w` descriptors rely on
 - Generated image size never exceeds the source photo. Sizes larger than the source are skipped, and the full source width is added when it is smaller than the largest size
 - `src/photos/images.json` is generated alongside the files and lists each photo's real widths and aspect ratio, so the Photo component can size the image box before any file loads
+- All-sky images for the planetarium that are not photos, like the Milky Way, live in `src/sky/:id/source.:format` and are generated the same way
 - Formats will all be AVIF for quality compression, with the exception of two JPEG for each, a one-size-fits-all that will look “good” enough on a legacy phone of browser (like 1024px) and jpeg fallback for thumbnail (320px).
 - Detect AVIF and give a small banner warning, in browsers larger than 1024px missing AVIF support explaining the poor image quality issue, that can be easily dismissed.
   —
@@ -82,6 +83,8 @@ Photo
 - It defaults to full page width but can have a different size set
 - Will use react-zoom-pan-pinch plugin to implement zooming and panning
 - An info button (i) to reveal the description.
+- The description panel drags by its edge, the padding around the text, to anywhere on the page that keeps 10px clear of the page's edges, the header, the timeline and the toolbars. The text inside still selects and scrolls
+- Icons and the flat photo can't be selected, text can
 - A next and previous button to change image
 - UI hides after a few seconds of inactivity to reveal full photo
   params:
@@ -109,9 +112,32 @@ Timeline
 - Client screen space permitting, titles can appear next to the dots
 - Clicking Title or thumbnail will change the Photo component, URL, and activate the warp page transition
 
+/sky/stars.json
+
+- Star catalog for the planetarium, written by `src/scripts/generate-stars.ts`, fetched at runtime so it stays out of the JS bundle
+
 Image generator script
 
 - A custom script using Sharp will generate images, reading the source and metadata from files in /src/photos/:friendly-id/source.:format and copying them to the public/images/:size/:friendly-id.:format . This will run at the start of dev, in build, and ideally also re-run when a file changes. The Config will ensure less images are generated during development to keep speed and disk usage reasonable while still providing enough images to test functionality.
+
+Planetarium
+
+- Shows an all-sky image around the viewer, who stands at the center of a sphere and can look in every direction: up, down, all the way around, and zoom (`src/components/planetarium.tsx`)
+- The home page orbits the Earth in front of NASA's star-free Milky Way map and about 9,100 catalog stars. Dragging the sky circles the camera around the Earth, which turns to show its other side while the stars behind sweep the other way, and dragging the Earth moves where it sits on screen. When nobody drags, the view keeps circling slowly. Names of the brightest stars appear when zoomed in
+- The sky is drawn with a stereographic projection, like planetarium software, instead of a camera lens's perspective, which stretches a wide view toward its edges. Shapes keep their proportions out to the edges, even zoomed all the way out
+- The Earth draws with a second camera that looks straight at it, its picture shifted to where the Earth sits, so it keeps its round shape and size anywhere on screen
+- The cosmic background photo sets `viewer: planetarium`, `projection: mollweide` and `frame: galactic` in its `meta.yaml`, so the WMAP map wraps around the viewer instead of showing as a flat oval. It opens on the galactic center, with the galaxy's plane level, and holds still unless dragged
+- A full-screen fragment shader turns each pixel's view direction into the image's longitude and latitude, then runs the projection's forward function, so a new image needs only its files, `projection` (`equirectangular` or `mollweide`) and `frame` (`equatorial` or `galactic`)
+- The coordinate math (galactic frame, observer and sidereal time, Mollweide, star colors) is in `src/hooks/sky-coordinates.ts` with unit tests
+- On the cosmic background, dragging grabs the sky so the point under the pointer stays there, and wheel and pinch zoom toward the pointer. Both pages have zoom buttons. A still sky renders only when something moves
+- On every viewer, the sky and the flat photos, arrow keys pan, `+` (or `=`) zooms in and `-` zooms out, wherever focus is on the page. Shortcuts with ⌘, ctrl or alt stay with the browser, and once the description is clicked, arrow keys scroll its text
+- Without WebGL, photo pages show the flat viewer and the home page shows its panels on plain black
+
+Sky data
+
+- Milky Way: [Deep Star Maps 2020](https://svs.gsfc.nasa.gov/4851), `milkyway_2020_8k.exr`, equirectangular in J2000 equatorial coordinates. Credit: NASA/Goddard Space Flight Center Scientific Visualization Studio, Gaia DR2: ESA/Gaia/DPAC. Converted once with `node src/scripts/convert-milky-way.ts milkyway_2020_8k.exr` (needs ffmpeg) into `src/sky/milky-way/source.webp`
+- Stars: Yale Bright Star Catalogue, 5th revised edition (Hoffleit and Warren 1991, public domain), from [CDS V/50](https://cdsarc.cds.unistra.fr/ftp/V/50/). Run `node src/scripts/generate-stars.ts catalog.gz` to rewrite `public/sky/stars.json`
+- Cosmic background: [WMAP nine-year ILC map](https://map.gsfc.nasa.gov/media/121238/) (NASA / WMAP Science Team), Mollweide in galactic coordinates
 
 Nice touches
 

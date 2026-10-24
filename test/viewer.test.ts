@@ -73,6 +73,34 @@ test.describe('viewer', () => {
       expect(await coversViewport(page)).toBe(true);
     });
 
+    await test.step('= key: zooms in around the viewport center', async () => {
+      const center = await centerPoint(page);
+      await page.keyboard.press('=');
+      await settle(page);
+      const { box } = await imageState(page);
+      expect(box.width).toBeGreaterThan(cover.box.width * 1.5);
+      const after = await centerPoint(page);
+      expect(after.x).toBeCloseTo(center.x, 2);
+      expect(after.y).toBeCloseTo(center.y, 2);
+    });
+
+    await test.step('arrow keys: show more of the side they point to', async () => {
+      const before = await centerPoint(page);
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowDown');
+      await settle(page);
+      const after = await centerPoint(page);
+      expect(after.x).toBeGreaterThan(before.x + 0.01);
+      expect(after.y).toBeGreaterThan(before.y + 0.01);
+    });
+
+    await test.step('- key: zooms back out to cover scale', async () => {
+      await page.keyboard.press('-');
+      await settle(page);
+      expect(await isAtCover(page)).toBe(true);
+      expect(await coversViewport(page)).toBe(true);
+    });
+
     await test.step('info: description opens and closes', async () => {
       const description = page.getByText(/symmetric protostellar jet/);
       await wakeControls(page);

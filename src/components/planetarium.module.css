@@ -1,0 +1,48 @@
+.planetarium {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: black;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  /* the ring shows for keyboard focus, not for every drag */
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--active-color);
+    outline-offset: calc(-1 * var(--active-border));
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* star names, placed next to each star every frame */
+.label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: -0.65em 0 0 12px;
+  color: var(--fill);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 0 4px black;
+  white-space: nowrap;
+  will-change: transform;
+}

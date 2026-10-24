@@ -15,11 +15,18 @@
     top: -60px;
     left: 10px;
   }
+
+  .planetarium {
+    height: min(100dvh, 100vh);
+    width: 100vw;
+  }
 }
 
 .picture {
   height: min(100dvh, 100vh);
   width: 100vw;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* sized from the photo aspect ratio, never from the loaded file */
@@ -57,10 +64,13 @@
     max-width: 100%;
   }
 
+  /* the back arrow is an icon, the title next to it stays selectable */
   a {
     display: inline-flex;
     margin-right: 10px;
     padding: 2px 5px;
+    user-select: none;
+    -webkit-user-select: none;
 
     &:hover,
     &:focus {
@@ -73,22 +83,9 @@
   }
 }
 
-.info {
-  font-family:
-    'Georgia', 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif;
-  font-style: italic;
-  margin: 1px;
-}
-
+/* toolbar looks come from toolbar.module.css, this places them */
 .toolbar {
-  background: var(--panel-background);
-  color: var(--fill);
-  border-radius: 8px;
-  display: flex;
   position: relative;
-  padding: 10px;
-  width: fit-content;
-  gap: 10px;
 
   &.right {
     margin-left: auto;
@@ -98,29 +95,6 @@
   &.bottom {
     margin-top: auto;
     top: -10px;
-  }
-}
-
-.button {
-  all: unset;
-  background: transparent;
-  border-radius: 5px;
-  border: 2px solid var(--fill);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 4px 6px;
-  font-size: 1.25em;
-  line-height: 1;
-  font-family: ui-monospace, monospace;
-  user-select: none;
-
-  &:hover,
-  &:focus {
-    --active-color: var(--earth-blue);
-    border-color: var(--active-color);
-    color: var(--active-color);
-    fill: var(--active-color);
   }
 }
 

@@ -12,6 +12,7 @@ This is a portfolio piece demonstrating up-to-date React and web development ski
 - **Zoom & Pan**: User-friendly controls with mouse, touch gestures, and keyboard support
 - **Educational Content**: Information about what the photographs show
 - **Timeline Navigation**: Visual timeline showing distance in lightyears, allowing navigation between photos
+- **Planetarium**: All-sky images wrap around the viewer with WebGL, so they can look in every direction: the cosmic background map, and on the home page the stars and the Milky Way behind an Earth the camera orbits
 - **Responsive Images**: Multiple image sizes generated for optimal performance across devices
 - **View Transitions**: Smooth page transitions using View Transitions API with fallback
 
@@ -22,6 +23,7 @@ This is a portfolio piece demonstrating up-to-date React and web development ski
 - Responsive image generation with Sharp
 - CSS Modules for styling
 - TypeScript for type safety
+- three.js for the Earth and the planetarium, with custom shaders
 
 ## Data Structure
 
@@ -38,6 +40,9 @@ Each photo has:
 - ID (counting number)
 - Declination (longitudinal position)
 - Right Ascension (latitudinal position)
+- Viewer, projection and frame (optional, for all-sky photos shown in the planetarium)
+
+All-sky images that are not photos, like the Milky Way, live in `src/sky/`. Star data is generated into `public/sky/stars.json`.
 
 ## Goals for AI-Assisted Development
 

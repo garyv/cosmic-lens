@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   TransformWrapper,
@@ -8,9 +15,18 @@ import {
   type ReactZoomPanPinchState,
 } from 'react-zoom-pan-pinch';
 import { Description } from './description.tsx';
+import type { PlanetariumControls } from './planetarium.tsx';
 import { Timeline } from './timeline.tsx';
+import { InfoToolbar, ZoomToolbar } from './toolbar.tsx';
+import { readViewKey } from '../hooks/read-view-key.ts';
+import { supportsWebGL } from '../hooks/supports-webgl.ts';
 import { useDebounce } from '../hooks/use-debounce.ts';
-import { getPhotoImages, type PhotoImages } from '../photos/image-manifest.ts';
+import {
+  getPhotoImages,
+  getSkySources,
+  type PhotoImages,
+} from '../photos/image-manifest.ts';
+import { photoMeta } from '../photos/photo-meta.ts';
 import style from './photo.module.css';
 
 export type PhotoProps = {
@@ -26,37 +42,77 @@ const missingImages: PhotoImages = {
 
 const maxZoom = 9;
 const zoomFactor = 1.618;
+const keyPanStep = 0.1; // fraction of the viewport's shorter side per arrow key press
+const keyPanTime = 200; // milliseconds for an arrow key press to pan the photo
 const zoomThreshold = 0.2;
 const gazeModeDelay = 3000;
 
+// loads three.js only for all-sky photos
+const Planetarium = lazy(() =>
+  import('./planetarium.tsx').then((module) => ({
+    default: module.Planetarium,
+  }))
+);
+
 const centerView = (): [number, number] => [innerWidth / 2, innerHeight / 2];
 
-const Controls = () => {
-  const { zoomToPoint, state } = useControls();
+/** zoom toolbar and keys for the flat viewer, which must sit inside its TransformWrapper */
+const Controls = ({ aspectRatio }: { aspectRatio: number }) => {
+  const { zoomToPoint, setTransform, instance } = useControls();
+
+  // where arrow keys pan to, so presses in quick succession add up instead of cutting each other short
+  const panTargetRef = useRef<{ x: number; y: number; until: number } | null>(
+    null
+  );
+
+  const zoomBy = useCallback(
+    (factor: number) => {
+      panTargetRef.current = null;
+      zoomToPoint(instance.state.scale * factor, ...centerView());
+    },
+    [zoomToPoint, instance]
+  );
+
+  // arrow keys pan and + - zoom wherever focus is on the page
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = readViewKey(event);
+      if (!key) return;
+
+      if ('zoom' in key) {
+        zoomBy(key.zoom === 'in' ? zoomFactor : 1 / zoomFactor);
+      } else {
+        const { scale, positionX, positionY } = instance.state;
+        const now = performance.now();
+        const pending = panTargetRef.current;
+        const from =
+          pending && now < pending.until
+            ? pending
+            : { x: positionX, y: positionY };
+
+        // the photo moves the other way, revealing more on the side the key points to
+        const step = Math.min(innerWidth, innerHeight) * keyPanStep;
+        const to = getBoundedPosition(
+          aspectRatio,
+          scale,
+          from.x - key.pan.x * step,
+          from.y - key.pan.y * step
+        );
+        panTargetRef.current = { ...to, until: now + keyPanTime };
+        setTransform(to.x, to.y, scale, keyPanTime);
+      }
+      event.preventDefault();
+    };
+    addEventListener('keydown', handleKeyDown);
+    return () => removeEventListener('keydown', handleKeyDown);
+  }, [zoomBy, setTransform, instance, aspectRatio]);
 
   return (
-    <div className={style.toolbar} role='toolbar' aria-label='Image controls'>
-      <button
-        className={style.button}
-        onClick={() =>
-          zoomToPoint(state.scale * zoomFactor, ...centerView())
-        }
-        title='Zoom in'
-        type='button'
-      >
-        ＋
-      </button>
-      <button
-        className={style.button}
-        onClick={() =>
-          zoomToPoint(state.scale / zoomFactor, ...centerView())
-        }
-        title='Zoom out'
-        type='button'
-      >
-        −
-      </button>
-    </div>
+    <ZoomToolbar
+      className={style.toolbar}
+      onZoomIn={() => zoomBy(zoomFactor)}
+      onZoomOut={() => zoomBy(1 / zoomFactor)}
+    />
   );
 };
 
@@ -69,22 +125,6 @@ const Header = ({ title }: { title: string }) => (
       <span title={title}>{title}</span>
     </h1>
   </header>
-);
-
-const Info = ({ onClick }: { onClick: () => void }) => (
-  <div
-    className={`${style.toolbar} ${style.right} ${style.bottom}`}
-    role='toolbar'
-  >
-    <button
-      className={style.button}
-      title='More Info'
-      type='button'
-      onClick={onClick}
-    >
-      <i className={style.info}>i</i>
-    </button>
-  </div>
 );
 
 const getSourceSet = (
@@ -189,11 +229,17 @@ const interactionEvents = [
 export const Photo = ({ photoId }: PhotoProps) => {
   const images = getPhotoImages(photoId) ?? missingImages;
   const { aspectRatio } = images;
+  const meta = photoMeta[photoId];
+
+  // all-sky photos surround the viewer, with the flat photo as a fallback without WebGL
+  const [isPlanetarium] = useState(
+    () => meta?.viewer === 'planetarium' && supportsWebGL()
+  );
+  const planetariumRef = useRef<PlanetariumControls>(null);
 
   // start at cover zoom so the first paint is already in place
   const [initialTransform] = useState(() => getCoverTransform(aspectRatio));
 
-  const [meta, setMeta] = useState<any>(null);
   const [description, setDescription] = useState<string | null>(null);
   const [isGazeMode, setIsGazeMode] = useState(false);
   const [isDescriptionVisible, setIsDescriptionVisible] = useState(false);
@@ -257,19 +303,14 @@ export const Photo = ({ photoId }: PhotoProps) => {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      import(`../photos/${photoId}/meta.yaml`),
-      import(`../photos/${photoId}/description.html?raw`),
-    ])
-      .then(([metaMod, descMod]) => {
+    import(`../photos/${photoId}/description.html?raw`)
+      .then((descMod) => {
         if (!cancelled) {
-          setMeta(metaMod.default || metaMod);
           setDescription(descMod.default || descMod);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setMeta(null);
           setDescription(null);
         }
       });
@@ -365,42 +406,75 @@ export const Photo = ({ photoId }: PhotoProps) => {
     }
   }, []);
 
+  const flatViewer = (
+    <TransformWrapper
+      initialScale={initialTransform.scale}
+      initialPositionX={initialTransform.x}
+      initialPositionY={initialTransform.y}
+      minScale={minZoom}
+      maxScale={maxZoom}
+      ref={transformComponentRef}
+      centerOnInit={false}
+      centerZoomedOut={false}
+      limitToBounds={true}
+      onTransform={handleTransform}
+      disablePadding={true}
+      wheel={{ disabled: false }}
+      doubleClick={{ step: zoom }} // stepping by the current zoom doubles it
+      autoAlignment={{ disabled: true }}
+    >
+      <TransformComponent>
+        <Picture
+          ref={imageRef}
+          photoId={photoId}
+          images={images}
+          displayWidth={displayWidth}
+          onPointerDown={handlePhotoPointerDown}
+        />
+      </TransformComponent>
+      <Controls aspectRatio={aspectRatio} />
+    </TransformWrapper>
+  );
+
   return (
     <main className={`${style.main} ${isGazeMode ? style.gazeMode : ''}`}>
       <div className={style.wrapper}>
-        <TransformWrapper
-          initialScale={initialTransform.scale}
-          initialPositionX={initialTransform.x}
-          initialPositionY={initialTransform.y}
-          minScale={minZoom}
-          maxScale={maxZoom}
-          ref={transformComponentRef}
-          centerOnInit={false}
-          centerZoomedOut={false}
-          limitToBounds={true}
-          onTransform={handleTransform}
-          disablePadding={true}
-          wheel={{ disabled: false }}
-          doubleClick={{ step: zoom }} // stepping by the current zoom doubles it
-          autoAlignment={{ disabled: true }}
-        >
-          <TransformComponent>
-            <Picture
-              ref={imageRef}
-              photoId={photoId}
-              images={images}
-              displayWidth={displayWidth}
-              onPointerDown={handlePhotoPointerDown}
-            />
-          </TransformComponent>
-          <Controls />
-        </TransformWrapper>
+        {isPlanetarium && meta ? (
+          <Suspense fallback={<div className={style.planetarium} />}>
+            <Planetarium
+              ref={planetariumRef}
+              className={style.planetarium}
+              layers={[
+                {
+                  type: 'image',
+                  ...getSkySources(photoId),
+                  projection: meta.projection ?? 'equirectangular',
+                  frame: meta.frame ?? 'equatorial',
+                },
+              ]}
+              aria-label={meta.alt}
+              fallback={flatViewer}
+            >
+              <ZoomToolbar
+                className={style.toolbar}
+                onZoomIn={() => planetariumRef.current?.zoomIn()}
+                onZoomOut={() => planetariumRef.current?.zoomOut()}
+              />
+            </Planetarium>
+          </Suspense>
+        ) : (
+          flatViewer
+        )}
       </div>
       {meta?.title && <Header title={meta.title} />}
       {description && (
         <>
           <Description text={description} visible={isDescriptionVisible} />
-          <Info onClick={handleInfoClick} />
+          <InfoToolbar
+            className={`${style.toolbar} ${style.right} ${style.bottom}`}
+            isOpen={isDescriptionVisible}
+            onClick={handleInfoClick}
+          />
         </>
       )}
       <Timeline currentPhoto={photoId} className={style.timeline} />
@@ -409,5 +483,5 @@ export const Photo = ({ photoId }: PhotoProps) => {
 };
 
 const getIsPanelFocused = () =>
-  // determine if focus is on an interactive panel element
-  !document.activeElement?.tagName.match(/^(body|img)$/i) ? true : false;
+  // determine if focus is on an interactive panel element, not the photo or the sky
+  !document.activeElement?.matches('body, img, [role="img"]');
