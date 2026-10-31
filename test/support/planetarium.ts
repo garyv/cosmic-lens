@@ -7,13 +7,18 @@ export const sky = (page: Page) => page.locator('[role="img"]:has(canvas)');
 /** the flat photo viewer's image */
 export const flatPhoto = (page: Page) => page.locator('main picture img');
 
-/** a screenshot of the sky, including any panels over it */
-export const skyShot = (page: Page) => sky(page).screenshot();
+/**
+ * A screenshot of the sky, including any panels over it, at one pixel per css pixel.
+ *
+ * The measurements all work in css pixels, and a device pixel screenshot takes about four times longer on a 2x screen.
+ */
+export const skyShot = (page: Page) => sky(page).screenshot({ scale: 'css' });
 
-/** a screenshot of the middle quarter of the sky, clear of the panels at its edges */
+/** a screenshot of the middle quarter of the sky, clear of the panels at its edges, at one pixel per css pixel */
 export const skyMiddleShot = async (page: Page) => {
   const box = (await sky(page).boundingBox())!;
   return page.screenshot({
+    scale: 'css',
     clip: {
       x: box.x + box.width / 4,
       y: box.y + box.height / 4,
@@ -304,22 +309,23 @@ export const openSkyDrag = (page: Page, { size = 48, distance = 80 } = {}) =>
     { size, distance }
   );
 
-/** opens a page and waits until its sky image has loaded and faded in */
+/**
+ * Opens a page and waits until its sky is finished: every layer's full size image, which replaces a small preview,
+ * has loaded and faded in.
+ */
 export const openSky = async (page: Page, path: string) => {
   await page.goto(path);
-  // the full size image loads after a small preview
-  await page.waitForLoadState('networkidle');
-  await expect(sky(page)).toBeVisible();
-  await expect
-    .poll(async () => (await skyStats(await skyShot(page))).brightness, {
-      timeout: 15_000,
-    })
-    .toBeGreaterThan(10);
-  // the image fades in over 900 ms
-  await page.waitForTimeout(1_200);
+  await expect(sky(page)).toHaveAttribute('aria-busy', 'false', {
+    timeout: 20_000,
+  });
 };
 
-/** stops the page clock, so the sky only drifts and renders when a test moves time forward */
+/**
+ * Stops the page clock, so the sky only drifts and renders when a test moves time forward.
+ *
+ * Installing the clock restarts `performance.now()` near zero, which is safe once `openSky` has seen every fade finish.
+ * A clock left running would fire frames faster than a slow renderer can draw them.
+ */
 export const freezeTime = async (page: Page) => {
   await page.clock.install();
   await page.clock.pauseAt(Date.now() + 1_000);

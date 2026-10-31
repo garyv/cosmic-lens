@@ -41,8 +41,12 @@
 .toolbar,
 .timeline {
   transition:
-    opacity 0.3s ease-out 0.15s,
-    visibility 0.15s ease-out 0.3s;
+    opacity 0.2s ease-out,
+    visibility 0s;
+}
+
+.timeline > * {
+  transition: opacity 0.2s ease-out;
 }
 
 .header {
@@ -102,7 +106,19 @@
   .header,
   .toolbar,
   .timeline {
-    opacity: 0;
     visibility: hidden;
+    transition:
+      opacity 0.3s ease-out 0.15s,
+      visibility 0.15s ease-out 0.3s;
+  }
+
+  .header,
+  .toolbar,
+  .timeline > * {
+    opacity: 0;
+  }
+
+  .timeline > * {
+    transition: opacity 0.3s ease-out 0.15s;
   }
 }

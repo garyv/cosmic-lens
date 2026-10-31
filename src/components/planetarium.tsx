@@ -166,6 +166,8 @@ export const Planetarium = ({
   const requestFrameRef = useRef<() => void>(() => {});
   const initializedRef = useRef(false); // prevents double initialization in strict mode
   const [hasFailed, setHasFailed] = useState(() => !supportsWebGL());
+  // busy until every layer has its final image and has faded in
+  const [isBusy, setIsBusy] = useState(true);
 
   // an earth layer turns the view into an orbit around the earth
   const [earthLayer] = useState(() =>
@@ -227,6 +229,7 @@ export const Planetarium = ({
     const fades: { start: number; uniform: { value: number }; to: number }[] =
       [];
     const beforeRender: (() => void)[] = [];
+    const loads: Promise<unknown>[] = [];
     let isDisposed = false;
 
     // the first image layer's frame stays upright
@@ -277,7 +280,7 @@ export const Planetarium = ({
         scene.add(mesh);
         disposables.push(material);
 
-        loadImageLayer(renderer, layer, (texture) => {
+        const load = loadImageLayer(renderer, layer, (texture) => {
           if (isDisposed) return texture.dispose();
           const previous = uniforms.uMap.value;
           uniforms.uMap.value = texture;
@@ -290,6 +293,7 @@ export const Planetarium = ({
           previous?.dispose();
           requestFrame();
         });
+        loads.push(load);
       } else if (layer.type === 'stars') {
         const uniforms = {
           uWorldFromFrame: {
@@ -324,7 +328,7 @@ export const Planetarium = ({
           uniforms.uPixelRatio.value = renderer.getPixelRatio();
         });
 
-        fetch(layer.src)
+        const load = fetch(layer.src)
           .then((response) => response.json() as Promise<StarFile>)
           .then(({ stars, names }) => {
             if (isDisposed) return;
@@ -355,6 +359,7 @@ export const Planetarium = ({
           .catch(() => {
             // the sky still works without stars
           });
+        loads.push(load);
       } else {
         // the earth sits ahead along the view, so turning the view circles the camera around it
         const direction = new THREE.Vector3();
@@ -548,7 +553,7 @@ export const Planetarium = ({
           },
         };
 
-        loadImageLayer(
+        const load = loadImageLayer(
           renderer,
           {
             ...layer,
@@ -569,6 +574,7 @@ export const Planetarium = ({
             requestFrame();
           }
         );
+        loads.push(load);
       }
     });
 
@@ -582,6 +588,8 @@ export const Planetarium = ({
 
     let frameId = 0;
     let lastTime = 0;
+    let isLoaded = false; // every layer has its final image, or gave up
+    let isFinished = false;
 
     const renderFrame = (now: number) => {
       frameId = 0;
@@ -607,10 +615,16 @@ export const Planetarium = ({
 
       let isFading = false;
       fades.forEach((fade) => {
-        const progress = Math.min(1, (now - fade.start) / fadeDuration);
+        const progress = THREE.MathUtils.clamp(
+          (now - fade.start) / fadeDuration,
+          0,
+          1
+        );
         fade.uniform.value = fade.to * progress * (2 - progress);
         isFading ||= progress < 1;
       });
+      // finished fades hold their brightness, so later frames never redo them
+      if (!isFading) fades.length = 0;
 
       beforeRender.forEach((callback) => callback());
       renderer.clear();
@@ -620,6 +634,12 @@ export const Planetarium = ({
       const isAnimating = isMoving || isFading;
       lastTime = isAnimating ? now : 0;
       if (isAnimating) requestFrame();
+
+      // this frame drew every layer's final image at full brightness
+      if (isLoaded && !isFading && !isFinished) {
+        isFinished = true;
+        setIsBusy(false);
+      }
     };
 
     const requestFrame = () => {
@@ -628,6 +648,12 @@ export const Planetarium = ({
       }
     };
     requestFrameRef.current = requestFrame;
+
+    // a layer that fails to load still counts as done, since the sky works without it
+    Promise.allSettled(loads).then(() => {
+      isLoaded = true;
+      requestFrame();
+    });
 
     // pause while the tab is hidden, and resume without a jump
     const handleVisibilityChange = () => {
@@ -671,6 +697,7 @@ export const Planetarium = ({
       <div
         ref={containerRef}
         role='img'
+        aria-busy={isBusy}
         tabIndex={0}
         {...rest}
         className={`${styles.planetarium} ${className}`}

@@ -189,7 +189,7 @@ test.describe('planetarium', () => {
     });
 
     await test.step('idle after dragging the sky: controls hide after 3 seconds', async () => {
-      await page.clock.install();
+      await freezeTime(page);
       const from = await skyCenter(page);
       await dragSky(page, from, { x: from.x + 40, y: from.y });
       await expect(zoomButton(page, 'in')).toBeVisible();

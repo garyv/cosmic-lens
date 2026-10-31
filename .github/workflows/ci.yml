@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, beta]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+  # passing test on main fast-forwards release to match main
+  release:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: gh api -X PATCH "repos/${{ github.repository }}/git/refs/heads/release" -f sha="${{ github.sha }}" -F force=false
+        env:
+          GH_TOKEN: ${{ github.token }}

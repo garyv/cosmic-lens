@@ -48,7 +48,10 @@ async function main() {
   console.log(`Done adding resized images to ${outputDir}`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
 
 const processPhoto = async (photoDir: string) => {
   const items = await fs.readdir(photoDir);
