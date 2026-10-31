@@ -183,14 +183,14 @@ npm run build
 
 Netlify builds every push with `netlify.toml`: `npm run build` on Node 24, publishing `dist`.
 
-- `main` deploys production: https://cosmic-lens.netlify.app
+- `release` deploys production: https://cosmic-lens.netlify.app
 - `beta` deploys the beta site: https://beta--cosmic-lens.netlify.app
 
 Changes, including Netlify config changes, go through beta first:
 
 1. Work on a short feature branch, then merge it into `beta`.
 2. Verify beta: `BASE_URL=https://beta--cosmic-lens.netlify.app npm run test:browser`, a manual pass on desktop and a real phone, and the Netlify deploy log for warnings.
-3. Promote by fast-forwarding `main` to `beta`, then run the same suite with `BASE_URL=https://cosmic-lens.netlify.app`.
+3. Promote by fast-forwarding `release` to `beta`, then run the same suite with `BASE_URL=https://cosmic-lens.netlify.app`.
 4. If production breaks, use "Publish deploy" on the previous production deploy in Netlify, then fix forward on `beta`.
 
 ## Styling
